@@ -1,5 +1,7 @@
 # Alternative primers for alternative primers for the ARTIC Network's nCov2019 multiplex PCR
 
+![GIF](https://raw.githubusercontent.com/ItokawaK/Alt_nCov2019_primers/master/nCoV_coverage.gif)
+
 Here we provide some resources regarding the alternative primers for the [ARTIC Network's mupltiplex PCR for SARS-CoV-2](https://github.com/artic-network/artic-ncov2019).
 
 See below article for detail of the modifications:
