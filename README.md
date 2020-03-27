@@ -1,4 +1,4 @@
-# Alternative primers for alternative primers for the ARTIC Network's nCov2019 multiplex PCR
+# Alternative primers for the ARTIC Network's nCov2019 multiplex PCR
 
 ![GIF](https://raw.githubusercontent.com/ItokawaK/Alt_nCov2019_primers/master/nCoV_coverage.gif)
 
