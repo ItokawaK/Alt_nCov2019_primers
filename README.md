@@ -40,10 +40,15 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
       -o OUT, --out OUT     Output PDF file name
 
   ```
+  
+    Output image
+  
+  ![plot_depth_out_image](https://user-images.githubusercontent.com/38896687/77901776-1ed5cb80-72bb-11ea-9b48-fa62a8bbc86a.png)
+
 
 - tools/trim_primers/trim_primer_parts.py
 
-    Trim suspected primer parts from reads. Input a bwa mem output directly via PIPE.
+    Trim suspected primer parts from reads. Conduct mapping by bwa mem, and send the output directly to the script *via* PIPE.
 
     ```
     Usage:
@@ -51,3 +56,5 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
       bwa mem nCov_bwadb untrimmed_R1.fq untrimmed_R2.fq |
          trim_primer_parts.py [--gziped] primer.bed trimmed_R1 trimmed_R2
     ```
+
+![trimming_image](https://user-images.githubusercontent.com/38896687/77902160-b89d7880-72bb-11ea-9ef6-9beaa33310bb.png)
