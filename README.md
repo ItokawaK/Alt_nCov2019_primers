@@ -43,7 +43,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
 - tools/trim_primers/trim_primer_parts.py
 
-    Trim susceptive primer parts from reads. Input a bwa mem output directly via PIPE.
+    Trim suspected primer parts from reads. Input a bwa mem output directly via PIPE.
 
     ```
     Usage:
