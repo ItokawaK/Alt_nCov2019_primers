@@ -48,7 +48,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
 - tools/trim_primers/trim_primer_parts.py
 
-    Trim suspected primer parts from reads. Conduct mapping by bwa mem, and send the output directly to the script *via* PIPE.
+    Trim suspected primer parts from reads obtained from illumina in paried-end mode. Conduct mapping by bwa mem, and send the output directly to the script *via* PIPE. Currently, reads only propperly paried (FR orientation) on the nCov genome will be processed.
 
     ```
     Usage:
