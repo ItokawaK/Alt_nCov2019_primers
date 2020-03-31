@@ -41,7 +41,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
       -r REF_FA, --ref_fa REF_FA
                       Reference fasta file [optional]
   ```
-    If `-r` option is set, mismatches found on >80% reads will be highlighted. This, however, takes additional time.
+    If `-r` option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time.
 
     Output image
 
