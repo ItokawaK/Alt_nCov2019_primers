@@ -59,6 +59,8 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
     Note that this program work conservatively, it throw away all soft masked parts and reads not mapped in proper pair (non 0x2 bit flag).
 
+![trimming_image](https://user-images.githubusercontent.com/38896687/78016726-2a41f900-7386-11ea-8dfd-a3960ee3283f.PNG)
+
     Send the bwa mem output or name sorted SAM to this script *via* PIPE.
     ```
     Usage:
@@ -66,5 +68,6 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
       bwa mem nCov_bwadb untrimmed_R1.fq untrimmed_R2.fq |
          trim_primer_parts.py [--gziped] primer.bed trimmed_R1 trimmed_R2
     ```
+    
 
 ![trimming_image](https://user-images.githubusercontent.com/38896687/77902160-b89d7880-72bb-11ea-9ef6-9beaa33310bb.png)
