@@ -16,7 +16,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
 ### Tools
 -------
- Those tools are still beta and have no warranty to properly work.
+ Those tools are still experimental and have no warranty to work properly.
 
 - tools/plot_depth.py
 
