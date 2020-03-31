@@ -72,7 +72,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
   Then remap the reads.
   ```
-  bwa mem nCov_bwadb trimmed_R1.gz trimmed_R2.gz > ...
+  bwa mem nCov_bwadb trimmed_R1.fq trimmed_R2.fq > ...
   
   ```
 
