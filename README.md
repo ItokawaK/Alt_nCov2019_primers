@@ -52,11 +52,11 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
     Trim primer parts of paired-end reads obtained from illumina machines.
 
-    This program work as:
+    This program works as:
     
-    1. Look alignments of mapped fragments from paired reads.
-    1. Find fragment ends *contained* in a primer region.
-    1. Trim sequence overlapping the primer region.
+ 1. Looks alignments of mapped fragments from paired reads.
+ 1. Finds fragment ends *contained* in a primer region.
+ 1. Trims sequence overlapping the primer region.
 
     Note that this program work conservatively, it throw away all soft masked parts and reads not mapped in proper pair (non 0x2 bit flag).
 
