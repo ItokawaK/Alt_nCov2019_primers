@@ -29,7 +29,7 @@ def samtools_depth(bam_file):
 # samtools stats analysis runner
 def samtools_stats(bam_file):
     p1 = subprocess.Popen(['samtools','stats', bam_file],
-                       stdout = subprocess.PIPE)
+                          stdout = subprocess.PIPE)
 
     out= p1.communicate()[0]
     total_l = 0
@@ -103,8 +103,7 @@ def add_mismatch(tbl, ax, threashold = 0.8):
                     color = 'r',
                     linewidth=0.5)
 
-def plot_depths(tbl, primer_region,
-         ax, meta_data=None, hline=10):
+def plot_depths(tbl, primer_region, ax, meta_data=None, hline=10):
 
     # Setting x and y labels
     ax.set_ylabel('Depth')
@@ -137,47 +136,49 @@ def plot_depths(tbl, primer_region,
     #             )
 
     # Plotting depths
-    ax.fill([0] + list(tbl['POS']) + [30000],
-          [0.9] + list(tbl['DEPTH'] ) + [0.9],
-          'b'
-          )
+
+    ax.fill([np.min(tbl['POS'])] + list(tbl['POS']) + [np.max(tbl['POS'])],
+            [0.9] + list(tbl['DEPTH'] ) + [0.9],
+            'b')
 
     # Adding targets on the bottom of the plotting area
     shade = patches.Rectangle(xy=(-0, 0.51),
-                            width=30000,
-                            height=0.48,
-                            fc='w',
-                            zorder=100)
+                              width=30000,
+                              height=0.48,
+                              fc='w',
+                              zorder=100)
     ax.add_patch(shade)
 
     for i in range(1,99):
-      base1 = 0.5
-      base2 = base1 * np.sqrt(2)
-      h1 = (base2 - base1) * 0.85
-      h2 = (1- base2) * 0.85
-      if i%2 == 1:
-          base = base1
-          h = h1
-      else:
-          base = base2
-          h = h2
+        base1 = 0.5
+        base2 = base1 * np.sqrt(2)
+        h1 = (base2 - base1) * 0.85
+        h2 = (1- base2) * 0.85
+        if i%2 == 1:
+            base = base1
+            h = h1
+        else:
+            base = base2
+            h = h2
 
-      r = patches.Rectangle(xy=(primer_hash[str(i)]['start'], base),
-                            width=primer_hash[str(i)]['end']-primer_hash[str(i)]['start'],
-                            height = h,
-                            fc='#42bff5',
-                            ec='k',
-                            zorder=101)
-      ax.add_patch(r)
-      ax.text(x=(primer_hash[str(i)]['end'] + primer_hash[str(i)]['start'])/2,
-              y=base + 0.05,
-              s=str(i),
-              ha='center',
-              fontsize=3,
-              weight = 'bold',
-              zorder=102
-              )
+        r = patches.Rectangle(xy=(primer_hash[str(i)]['start'], base),
+                              width=primer_hash[str(i)]['end']-primer_hash[str(i)]['start'],
+                              height = h,
+                              fc='#42bff5',
+                              ec='k',
+                              zorder=101)
+        ax.add_patch(r)
+        ax.text(x=(primer_hash[str(i)]['end'] + primer_hash[str(i)]['start'])/2,
+                y=base + 0.05,
+                s=str(i),
+                ha='center',
+                fontsize=3,
+                weight = 'bold',
+                zorder=102
+                )
     ax.axhline(1, color='k',zorder=102)
+
+    # Adding a horizontal line at hline
     ax.axhline(hline,
                color='k',
                linestyle=':',
@@ -185,20 +186,26 @@ def plot_depths(tbl, primer_region,
                zorder=103)
 
     # Ticks
-    ax.set_yticks([i * ii  for ii in (1,10,100,1000,10000,10000) for i in range(1,11)],
-                minor=True)
+    #ymax = np.ceil(tbl['DEPTH'].max() / 10000) * 10000
+    ax.set_xticks([i * 1000 for i in range(1,30)], minor=True)
+    ax.set_xticks([i * 5000 for i in range(7)])
+    ax.set_xticklabels([str(i * 5000) for i in range(7)], fontsize='8')
 
-    ymax = np.ceil(tbl['DEPTH'].max() / 10000) * 10000
     ax.set_yscale('log')
-    ax.set_ylim(0.5, ymax)
+    ax.set_ylim(0.5, 10000)
+
+    ax.set_yticks([i * ii  for ii in (1,10,100,1000) for i in range(1,11)],
+                  minor=True)
+    ax.set_yticks([1, 10, 100, 1000, 10000])
+    ax.set_yticklabels([str(i) for i in (1,10,100,1000,10000)], fontsize='8')
 
 
     # Some information at the right side of figure
 
     if meta_data != None:
-      x,y = np.array([[1, 1.04], [0.85, 0.85]])
-      h_offset = 0.01
-      for i in range(len(meta_data)):
+        x,y = np.array([[1, 1.04], [0.85, 0.85]])
+        h_offset = 0.01
+        for i in range(len(meta_data)):
           ax.text(x[0] + h_offset,
                   y[0] -0.04- (0.04 * i),
                   '{}: {}'.format(meta_data[i][0], meta_data[i][1]),
@@ -247,7 +254,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.4
+    _version = 0.5
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
