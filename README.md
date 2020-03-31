@@ -62,13 +62,18 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
 ![trimming_image](https://user-images.githubusercontent.com/38896687/78016726-2a41f900-7386-11ea-8dfd-a3960ee3283f.PNG)
 
-    Send the bwa mem output or name sorted SAM to this script *via* PIPE.
-    ```
-    Usage:
+ Send the bwa mem output or name sorted SAM to this script *via* PIPE.
+ ```
+   Usage:
 
       bwa mem nCov_bwadb untrimmed_R1.fq untrimmed_R2.fq |
          trim_primer_parts.py [--gziped] primer.bed trimmed_R1 trimmed_R2
-    ```
-    
+  ```
+
+  Then remap the reads.
+  ```
+  bwa mem nCov_bwadb trimmed_R1.gz trimmed_R2.gz > ...
+  
+  ```
 
 ![trimming_image](https://user-images.githubusercontent.com/38896687/77902160-b89d7880-72bb-11ea-9ef6-9beaa33310bb.png)
