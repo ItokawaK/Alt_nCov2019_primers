@@ -18,7 +18,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 -------
  Those tools are still beta and have no warranty to properly work.
 
-- tools/plot_depth_v0.3.py
+- tools/plot_depth.py
 
    Generates depth plots in sigle PDF file from multiple BAM files to briefly check coverages.
 
@@ -31,18 +31,20 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
      - pandas
 
   ```
-  Usage: plot_depth_v0.3.py [-h] [-i [BAMS [BAMS ...]]] [-p PRIMER] [-o OUT]
+  Usage: plot_depth.py [-h] [-i [BAMS [BAMS ...]]] [-p PRIMER] [-o OUT]
 
       -i [BAMS [BAMS ...]], --bams [BAMS [BAMS ...]]
                       Paths for input BAMs
       -p PRIMER, --primer PRIMER
                       primer_region in BED format
       -o OUT, --out OUT     Output PDF file name
-
+      -r REF_FA, --ref_fa REF_FA
+                      Reference fasta file [optional]
   ```
-  
+    `-r` option is used to plot mismatches on >80% reads. This takes additional time.
+
     Output image
-  
+
   ![plot_depth_out_image](https://user-images.githubusercontent.com/38896687/77901776-1ed5cb80-72bb-11ea-9b48-fa62a8bbc86a.png)
 
 
