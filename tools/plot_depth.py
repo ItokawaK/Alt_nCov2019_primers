@@ -22,8 +22,7 @@ def samtools_depth(bam_file):
     out = p1.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
-                            'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  + 0.9
-                                      for i in out]
+                            'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  0.9 for i in out]
                            })
 
     return out_tbl
