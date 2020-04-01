@@ -22,7 +22,9 @@ def samtools_depth(bam_file):
     out = p1.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
-                            'DEPTH':  [int(i[2]) for i in out]})
+                            'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  + 0.9
+                                      for i in out]
+                           })
 
     return out_tbl
 
@@ -102,6 +104,46 @@ def add_mismatch(tbl, ax, threashold = 0.8):
             ax.plot([x,x],[1,y],
                     color = 'r',
                     linewidth=0.5)
+
+# Adding gene boxes
+def add_genes(ax):
+    gene_tbl = pd.DataFrame(
+        {
+         'Name':["ORF1ab", "S", "ORF3a" , "E", "M", "ORF6", "ORF7a" , "ORF8", "N", "ORF10"],
+         'Start':[265,21562,25392,26244,26522,27201,27393,27893,28273,29557],
+         'End':[21555,25384,26220,26472,27191,27387,27759,28259,29533,29674]
+        }
+                            )
+
+    for index, row in gene_tbl.iterrows():
+        g_start = row['Start']
+        g_end = row['End']
+        g_name = row['Name']
+        y1 = 0.2
+        y2 = 0.3
+        if index % 2 == 1:
+            y1 += 0.05
+            y2 += 0.05
+            text_y = 0.4
+        else:
+            text_y =0.15
+
+        r = patches.Rectangle(xy=(g_start, y1),
+                        width= g_end - g_start,
+                        height = y2-y1,
+                        fc='yellow',
+                        ec='k',
+                        zorder=101)
+        ax.add_patch(r)
+        ax.text(x=(g_start + g_end)/2,
+          y=text_y,
+          s=g_name,
+          ha='center',
+          va='center',
+          fontsize=3,
+          weight = 'bold',
+          zorder=102
+          )
 
 def plot_depths(tbl, primer_region, ax, meta_data=None, hline=10):
 
@@ -192,7 +234,7 @@ def plot_depths(tbl, primer_region, ax, meta_data=None, hline=10):
     ax.set_xticklabels([str(i * 5000) for i in range(7)], fontsize='8')
 
     ax.set_yscale('log')
-    ax.set_ylim(0.5, 10000)
+    ax.set_ylim(0.12, 10000)
 
     ax.set_yticks([i * ii  for ii in (1,10,100,1000) for i in range(1,11)],
                   minor=True)
@@ -244,6 +286,7 @@ def main(bam_files, outpdf, primer_bed, add_mismatches=False, fa_file = None):
                     ax,
                     meta_data = meta_data,
                     hline=10)
+        add_genes(ax)
         if add_mismatches:
             add_mismatch(tbl, ax, threashold = 0.8)
 
