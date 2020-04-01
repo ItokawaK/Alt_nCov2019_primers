@@ -297,7 +297,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.5
+    _version = 0.6
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
