@@ -14,6 +14,8 @@ import os
 import pandas as pd
 import numpy as np
 import re
+from matplotlib.ticker import NullFormatter
+
 
 # samtools depth analysis runner
 def samtools_depth(bam_file):
@@ -22,7 +24,7 @@ def samtools_depth(bam_file):
     out = p1.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
-                            'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  0.9 for i in out]
+                            'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  0.7 for i in out]
                            })
 
     return out_tbl
@@ -79,7 +81,7 @@ def samtools_mpileup(bam_file, ref_fa):
     #return out
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
                             'REF_BASE': [i[2] for i in out],
-                            'DEPTH':  [int(i[3]) for i in out],
+                            'DEPTH':  [int(i[3]) if int(i[3]) > 0 else  0.7 for i in out],
                             'READ_BASES':  [readbase_parser(i[4]) for i in out]
                            })
     def count_mismtaches(read_bases):
@@ -144,24 +146,86 @@ def add_genes(ax):
           zorder=102
           )
 
-def plot_depths(tbl, primer_region, ax, meta_data=None, hline=10):
+def add_amplicons(primer_bed, ax, ymax=0.8, ymin=0.5):
+
+    df = pd.read_csv(primer_bed, sep='\t', header = None)
+
+    n_primer = len(df)
+
+    # Primer regions
+    amplicon_dict = {}
+    for index, row in df.iterrows():
+        start = row[1]
+        end = row[2]
+        primer_end = row[3]
+        prefix, amplicom_id, primer_direction = primer_end.split('_')
+        if amplicom_id not in amplicon_dict:
+            amplicon_dict[amplicom_id] = {}
+            amplicon_dict[amplicom_id]['start'] = 0
+            amplicon_dict[amplicom_id]['end'] = 0
+        if 'LEFT' in primer_direction:
+            amplicon_dict[amplicom_id]['start'] = start
+        else:
+            amplicon_dict[amplicom_id]['end'] = end
+
+    amplicon_ids = amplicon_dict.keys()
+
+    '''
+        ______      __ top2
+        | 2  |
+        |____|      __ base2
+            ______  __ top1
+            | 3  |
+            |____|  __ base1
+    '''
+
+    base1 = ymin
+    top1 = 10 ** (np.log10(ymax * ymin) / 2)
+    base2 = 10 ** (np.log10(ymax * ymin) / 2)
+    top2 = ymax
+
+    for id in amplicon_ids:
+        id_num = int(id)
+
+        if id_num % 2 == 1:
+            base = base1
+            top = top1
+            h = top1 - base1
+            fc = '#5499C7'
+        else:
+            base = base2
+            top = top2
+            h = top2 - base2
+            fc = '#F5B041'
+
+        x1 = amplicon_dict[id]['start']
+        x2 = amplicon_dict[id]['end']
+
+
+        r = patches.Rectangle(xy=(x1, base),
+                              width=x2-x1,
+                              height=h,
+                              linewidth = 0.5,
+                              fc=fc,
+                              ec='k',
+                              zorder=101)
+        ax.add_patch(r)
+        ax.text(x=(x1+x2)/2,
+                y=10 ** (np.log10(base*top)/2),
+                s=id,
+                ha='center',
+                va='center',
+                fontsize=2.8,
+                weight='bold',
+                zorder=102
+                )
+
+def plot_depths(tbl, ax, meta_data=None, hline=10):
 
     # Setting x and y labels
     ax.set_ylabel('Depth')
     ax.set_xlabel('Genome position nt')
 
-    # Primer regions
-    primer_hash = {}
-    for i in range(196):
-        tmp = primer_region.loc[i, 3].split('_')
-        if tmp[1] not in primer_hash:
-            primer_hash[tmp[1]] = {}
-            primer_hash[tmp[1]]['start'] = 0
-            primer_hash[tmp[1]]['end'] = 0
-        if 'LEFT' in tmp[2]:
-            primer_hash[tmp[1]]['start'] = primer_region.loc[i, 1]
-        else:
-            primer_hash[tmp[1]]['end'] = primer_region.loc[i, 2]
 
     # Adding vertical strips for highlight
     # for i in range(1,99):
@@ -179,45 +243,12 @@ def plot_depths(tbl, primer_region, ax, meta_data=None, hline=10):
     # Plotting depths
 
     ax.fill([np.min(tbl['POS'])] + list(tbl['POS']) + [np.max(tbl['POS'])],
-            [0.9] + list(tbl['DEPTH'] ) + [0.9],
+            [0.7] + list(tbl['DEPTH'] ) + [0.7],
             'b')
 
-    # Adding targets on the bottom of the plotting area
-    shade = patches.Rectangle(xy=(-0, 0.51),
-                              width=30000,
-                              height=0.48,
-                              fc='w',
-                              zorder=100)
-    ax.add_patch(shade)
+    ax.axhspan(0.1, 0.83, fc='w', zorder=100) # masking
 
-    for i in range(1,99):
-        base1 = 0.5
-        base2 = base1 * np.sqrt(2)
-        h1 = (base2 - base1) * 0.85
-        h2 = (1- base2) * 0.85
-        if i%2 == 1:
-            base = base1
-            h = h1
-        else:
-            base = base2
-            h = h2
-
-        r = patches.Rectangle(xy=(primer_hash[str(i)]['start'], base),
-                              width=primer_hash[str(i)]['end']-primer_hash[str(i)]['start'],
-                              height = h,
-                              fc='#42bff5',
-                              ec='k',
-                              zorder=101)
-        ax.add_patch(r)
-        ax.text(x=(primer_hash[str(i)]['end'] + primer_hash[str(i)]['start'])/2,
-                y=base + 0.05,
-                s=str(i),
-                ha='center',
-                fontsize=3,
-                weight = 'bold',
-                zorder=102
-                )
-    ax.axhline(1, color='k',zorder=102)
+    ax.axhline(1, color='k', linewidth=0.5, zorder=102) # line at depth=1
 
     # Adding a horizontal line at hline
     ax.axhline(hline,
@@ -234,6 +265,9 @@ def plot_depths(tbl, primer_region, ax, meta_data=None, hline=10):
 
     ax.set_yscale('log')
     ax.set_ylim(0.12, 10000)
+    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.yaxis.set_minor_formatter(NullFormatter())
+
 
     ax.set_yticks([i * ii  for ii in (1,10,100,1000) for i in range(1,11)],
                   minor=True)
@@ -254,13 +288,12 @@ def plot_depths(tbl, primer_region, ax, meta_data=None, hline=10):
                   clip_on=False,
                   transform=ax.transAxes)
 
-def main(bam_files, outpdf, primer_bed, add_mismatches=False, fa_file = None):
+def main(bam_files, outpdf, primer_bed=None, add_mismatches=False, fa_file = None):
 
     if add_mismatches and fa_file is None:
         sys.exit('Requires the reference fasta')
 
     n_sample = len(bam_files)
-    primer_region = pd.read_csv(primer_bed, sep='\t', header = None)
 
     fig_hi = 3 * n_sample
     fig = plt.figure(figsize=(8, fig_hi))
@@ -281,13 +314,16 @@ def main(bam_files, outpdf, primer_bed, add_mismatches=False, fa_file = None):
         ax = fig.add_subplot(n_sample, 1, i+1)
         ax.set_title(title)
         plot_depths(tbl,
-                    primer_region,
                     ax,
                     meta_data = meta_data,
                     hline=10)
+        if primer_bed != None:
+            add_amplicons(primer_bed, ax)
         add_genes(ax)
         if add_mismatches:
             add_mismatch(tbl, ax, threashold = 0.8)
+
+        labels = [item.get_text() for item in ax.get_yticklabels()]
 
     plt.savefig(outpdf, format='pdf')
 
