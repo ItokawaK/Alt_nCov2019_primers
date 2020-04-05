@@ -100,5 +100,3 @@ class Fragment():
             self.alignments[1].read_seq = self.alignments[1].read_seq[:walk1]
             self.alignments[1].read_q = self.alignments[1].read_q[:walk1]
             self.alignments[1].read2refcorr = self.alignments[1].read2refcorr[:walk1]
-
-        
