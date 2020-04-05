@@ -15,6 +15,8 @@ import pandas as pd
 import numpy as np
 import re
 from matplotlib.ticker import NullFormatter
+from concurrent.futures import ProcessPoolExecutor
+
 
 
 # samtools depth analysis runner
@@ -74,6 +76,13 @@ def samtools_mpileup(bam_file, ref_fa):
 
         return split_bases
 
+    def count_mismtaches(read_bases):
+        cnt = 0
+        for base in read_bases:
+            if base in 'ATGCatgc':
+                cnt += 1
+        return cnt
+
     p1 = subprocess.Popen(['samtools','mpileup', '-f', ref_fa, '-ax', bam_file],
                        stdout = subprocess.PIPE)
     out = p1.communicate()[0]
@@ -82,16 +91,8 @@ def samtools_mpileup(bam_file, ref_fa):
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
                             'REF_BASE': [i[2] for i in out],
                             'DEPTH':  [int(i[3]) if int(i[3]) > 0 else  0.7 for i in out],
-                            'READ_BASES':  [readbase_parser(i[4]) for i in out]
+                            'MISMATCHES':  [count_mismtaches(readbase_parser(i[4])) for i in out]
                            })
-    def count_mismtaches(read_bases):
-        cnt = 0
-        for base in read_bases:
-            if base in 'ATGCatgc':
-                cnt += 1
-        return cnt
-
-    out_tbl['MISMATCHES'] = [count_mismtaches(tmp) for tmp in out_tbl['READ_BASES']]
 
     return out_tbl
 
@@ -244,7 +245,7 @@ def plot_depths(tbl, ax, meta_data=None, hline=10):
 
     ax.fill([np.min(tbl['POS'])] + list(tbl['POS']) + [np.max(tbl['POS'])],
             [0.7] + list(tbl['DEPTH'] ) + [0.7],
-            'b')
+            '#2980B9')
 
     ax.axhspan(0.1, 0.83, fc='w', zorder=100) # masking
 
@@ -288,10 +289,16 @@ def plot_depths(tbl, ax, meta_data=None, hline=10):
                   clip_on=False,
                   transform=ax.transAxes)
 
-def main(bam_files, outpdf, primer_bed=None, add_mismatches=False, fa_file = None):
+def main(bam_files, outpdf, primer_bed=None, fa_file=None, num_cpu=1):
 
-    if add_mismatches and fa_file is None:
-        sys.exit('Requires the reference fasta')
+    if fa_file == None:
+        with ProcessPoolExecutor(max_workers = num_cpu) as executor:
+            executed = [executor.submit(samtools_depth, bam) for bam in bam_files]
+    else:
+        with ProcessPoolExecutor(max_workers = num_cpu) as executor:
+            executed = [executor.submit(samtools_mpileup, bam, fa_file) for bam in bam_files]
+
+    depth_tbls = [ex.result() for ex in executed]
 
     n_sample = len(bam_files)
 
@@ -303,25 +310,26 @@ def main(bam_files, outpdf, primer_bed=None, add_mismatches=False, fa_file = Non
                         top=1-0.5/fig_hi)
 
     for i in range(n_sample):
-        if add_mismatches:
-            tbl = samtools_mpileup(bam_files[i], fa_file)
-        else:
-            tbl = samtools_depth(bam_files[i])
+        # if add_mismatches:
+        #     tbl = samtools_mpileup(bam_files[i], fa_file)
+        # else:
+        #     tbl = samtools_depth(bam_files[i])
+
         align_stats = samtools_stats(bam_files[i])
         meta_data = [('Total Seq.', '{:.1f} Mb'.format(align_stats[0]/1e6)),
                      ('Paired properly', '{:.1%} '.format(align_stats[1]))]
         title = os.path.basename(bam_files[i])
         ax = fig.add_subplot(n_sample, 1, i+1)
         ax.set_title(title)
-        plot_depths(tbl,
+        plot_depths(depth_tbls[i],
                     ax,
                     meta_data = meta_data,
                     hline=10)
         if primer_bed != None:
             add_amplicons(primer_bed, ax)
         add_genes(ax)
-        if add_mismatches:
-            add_mismatch(tbl, ax, threashold = 0.8)
+        if fa_file != None:
+            add_mismatch(depth_tbls[i], ax, threashold = 0.8)
 
         labels = [item.get_text() for item in ax.get_yticklabels()]
 
@@ -332,7 +340,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.6
+    _version = 0.7
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
@@ -346,8 +354,11 @@ if __name__=='__main__':
                         '--out',
                         help='Output PDF file name')
     parser.add_argument('-r',
-                        '--ref_fa',
+                        '--ref_fa', default=None,
                         help='Reference fasta file [optional]')
+    parser.add_argument('-t',
+                        '--threads', default=1, type=int,
+                        help='Num tasks to process concurrently [optional]')
 
     args = parser.parse_args()
 
@@ -358,20 +369,16 @@ if __name__=='__main__':
     if not args.primer:
         sys.exit('-p (--primer) option is mandate')
 
-    if args.ref_fa:
-        add_mismatches = True
-    else:
-        add_mismatches = False
-
     for file in args.bams:
         if not os.path.isfile(file):
             sys.exit('{} was not found'.format(file))
-
     if not os.path.isfile(args.primer):
         sys.exit('{} was not found'.format(args.primer))
+    if args.ref_fa and not os.path.isfile(args.ref_fa):
+        sys.exit('{} was not found'.format(args.ref_fa))
 
     main(args.bams,
          args.out,
          args.primer,
-         add_mismatches=add_mismatches,
-         fa_file=args.ref_fa)
+         fa_file=args.ref_fa,
+         num_cpu=args.threads)
