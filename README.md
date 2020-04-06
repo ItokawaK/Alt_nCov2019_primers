@@ -47,8 +47,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
     Output image
 
-  ![plot_depth_out_image](https://user-images.githubusercontent.com/38896687/77901776-1ed5cb80-72bb-11ea-9b48-fa62a8bbc86a.png)
-
+![plot_depth_out_image_2](https://user-images.githubusercontent.com/38896687/78553244-e8142e00-7843-11ea-8c40-e27a0f2066a6.png)
 
 - tools/trim_primers/trim_primer_parts.py
 
