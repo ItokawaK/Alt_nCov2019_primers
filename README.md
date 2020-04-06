@@ -40,6 +40,8 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
       -o OUT, --out OUT     Output PDF file name
       -r REF_FA, --ref_fa REF_FA
                       Reference fasta file [optional]
+      -t THREADS, --threads THREADS
+                          Num tasks to process concurrently [optional]
   ```
     If `-r` option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time.
 
@@ -53,7 +55,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
     Trim primer parts of paired-end reads obtained from illumina machines.
 
     This program works as:
-    
+
  1. Looks alignments of mapped fragments from paired reads.
  1. Finds fragment ends *contained* in a primer region.
  1. Trims sequence overlapping the primer region.
@@ -73,7 +75,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
   Then remap the reads.
   ```
   bwa mem nCov_bwadb trimmed_R1.fq trimmed_R2.fq > ...
-  
+
   ```
 
 ![trimming_image](https://user-images.githubusercontent.com/38896687/77902160-b89d7880-72bb-11ea-9ef6-9beaa33310bb.png)
