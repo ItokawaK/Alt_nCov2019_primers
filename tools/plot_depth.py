@@ -293,12 +293,17 @@ def main(bam_files, outpdf, primer_bed=None, fa_file=None, num_cpu=1):
 
     if fa_file == None:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
-            executed = [executor.submit(samtools_depth, bam) for bam in bam_files]
+            executed1 = [executor.submit(samtools_depth, bam) for bam in bam_files]
     else:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
-            executed = [executor.submit(samtools_mpileup, bam, fa_file) for bam in bam_files]
+            executed1 = [executor.submit(samtools_mpileup, bam, fa_file) for bam in bam_files]
 
-    depth_tbls = [ex.result() for ex in executed]
+    depth_tbls = [ex.result() for ex in executed1]
+
+    with ProcessPoolExecutor(max_workers = num_cpu) as executor:
+        executed2 = [executor.submit(samtools_stats, bam) for bam in bam_files]
+
+    stats = [ex.result() for ex in executed2]
 
     n_sample = len(bam_files)
 
@@ -315,7 +320,7 @@ def main(bam_files, outpdf, primer_bed=None, fa_file=None, num_cpu=1):
         # else:
         #     tbl = samtools_depth(bam_files[i])
 
-        align_stats = samtools_stats(bam_files[i])
+        align_stats = stats[i]
         meta_data = [('Total Seq.', '{:.1f} Mb'.format(align_stats[0]/1e6)),
                      ('Paired properly', '{:.1%} '.format(align_stats[1]))]
         title = os.path.basename(bam_files[i])
