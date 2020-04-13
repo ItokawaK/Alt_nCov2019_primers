@@ -7,6 +7,7 @@ finally:
     import matplotlib.pyplot as plt
     import matplotlib.lines as lines
     import matplotlib.patches as patches
+    from matplotlib.ticker import NullFormatter
 
 import subprocess
 import sys
@@ -14,9 +15,10 @@ import os
 import pandas as pd
 import numpy as np
 import re
-from matplotlib.ticker import NullFormatter
 from concurrent.futures import ProcessPoolExecutor
+import signal
 
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 # samtools depth analysis runner
@@ -97,14 +99,31 @@ def samtools_mpileup(bam_file, ref_fa):
     return out_tbl
 
 # Adding lines for mismatches in plot
-def add_mismatch(tbl, ax, threashold = 0.8):
+# Detecting mismatches contained in primer region
+def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
+    if primer_bed:
+        df = pd.read_csv(primer_bed, sep='\t', header = None)
+        def is_contained(pos, df):
+            for index, row in df.iterrows():
+                start = row[1]
+                end = row[2]
+                # if pos -1 < start:
+                #     return False
+                if pos -1 >= start and pos <= end:
+                    return True
+
+            return False
+
     xy = []
     for index, row in tbl.iterrows():
         if row['MISMATCHES'] > row['DEPTH'] * threashold:
             x = row['POS']
             y = row['MISMATCHES']
+            col = '#F4D03F'
+            if primer_bed and is_contained(x, df):
+                col = '#E74C3C'
             ax.plot([x,x],[1,y],
-                    color = 'r',
+                    color = col,
                     linewidth=0.5)
 
 # Adding gene boxes
@@ -158,8 +177,8 @@ def add_amplicons(primer_bed, ax, ymax=0.8, ymin=0.5):
     for index, row in df.iterrows():
         start = row[1]
         end = row[2]
-        primer_end = row[3]
-        prefix, amplicom_id, primer_direction = primer_end.split('_')
+        primer_name = row[3]
+        prefix, amplicom_id, primer_direction = primer_name.split('_')
         if amplicom_id not in amplicon_dict:
             amplicon_dict[amplicom_id] = {}
             amplicon_dict[amplicom_id]['start'] = 0
@@ -334,7 +353,7 @@ def main(bam_files, outpdf, primer_bed=None, fa_file=None, num_cpu=1):
             add_amplicons(primer_bed, ax)
         add_genes(ax)
         if fa_file != None:
-            add_mismatch(depth_tbls[i], ax, threashold = 0.8)
+            add_mismatch(depth_tbls[i], ax, threashold = 0.8, primer_bed=primer_bed)
 
         labels = [item.get_text() for item in ax.get_yticklabels()]
 
@@ -353,7 +372,7 @@ if __name__=='__main__':
                         nargs='*',
                         help='Paths for input BAMs')
     parser.add_argument('-p',
-                        '--primer',
+                        '--primer', default=None,
                         help='primer_region in BED format')
     parser.add_argument('-o',
                         '--out',
@@ -371,19 +390,19 @@ if __name__=='__main__':
         sys.exit('-o (--out) option is mandate')
     if not args.bams:
         sys.exit('-i (--bams) option is mandate')
-    if not args.primer:
-        sys.exit('-p (--primer) option is mandate')
+    # if not args.primer:
+    #     sys.exit('-p (--primer) option is mandate')
 
     for file in args.bams:
         if not os.path.isfile(file):
             sys.exit('{} was not found'.format(file))
-    if not os.path.isfile(args.primer):
+    if args.primer and not os.path.isfile(args.primer):
         sys.exit('{} was not found'.format(args.primer))
     if args.ref_fa and not os.path.isfile(args.ref_fa):
         sys.exit('{} was not found'.format(args.ref_fa))
 
     main(args.bams,
          args.out,
-         args.primer,
+         primer_bed=args.primer,
          fa_file=args.ref_fa,
          num_cpu=args.threads)
