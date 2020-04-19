@@ -152,7 +152,7 @@ def add_genes(ax):
         r = patches.Rectangle(xy=(g_start, y1),
                         width= g_end - g_start,
                         height = y2-y1,
-                        fc='yellow',
+                        fc='#606020',
                         ec='k',
                         zorder=101)
         ax.add_patch(r)
@@ -166,7 +166,7 @@ def add_genes(ax):
           zorder=102
           )
 
-def add_amplicons(primer_bed, ax, ymax=0.8, ymin=0.5):
+def add_amplicons(primer_bed, ax, highlights=[], ymax=0.8, ymin=0.5):
 
     df = pd.read_csv(primer_bed, sep='\t', header = None)
 
@@ -211,12 +211,12 @@ def add_amplicons(primer_bed, ax, ymax=0.8, ymin=0.5):
             base = base1
             top = top1
             h = top1 - base1
-            fc = '#5499C7'
+            fc = '#608020'
         else:
             base = base2
             top = top2
             h = top2 - base2
-            fc = '#F5B041'
+            fc = '#E0E080'
 
         x1 = amplicon_dict[id]['start']
         x2 = amplicon_dict[id]['end']
@@ -239,6 +239,32 @@ def add_amplicons(primer_bed, ax, ymax=0.8, ymin=0.5):
                 weight='bold',
                 zorder=102
                 )
+
+        if id in highlights:
+
+            ax.axvspan(
+              x1,
+              x2,
+              alpha=0.5,
+              color=fc,
+              zorder=50
+            )
+
+            if id_num%2==1:
+                y=4000
+            else:
+                y=6000
+
+            ax.text(
+                x=(x1+x2)/2,
+                y=y,
+                s=id,
+                ha='center',
+                va='bottom',
+                fontsize=5,
+                weight='bold',
+                zorder=55
+            )
 
 def plot_depths(tbl, ax, meta_data=None, hline=10):
 
@@ -264,7 +290,8 @@ def plot_depths(tbl, ax, meta_data=None, hline=10):
 
     ax.fill([np.min(tbl['POS'])] + list(tbl['POS']) + [np.max(tbl['POS'])],
             [0.7] + list(tbl['DEPTH'] ) + [0.7],
-            '#2980B9')
+            '#A0A0A0',
+            zorder=52)
 
     ax.axhspan(0.1, 0.83, fc='w', zorder=100) # masking
 
@@ -308,7 +335,7 @@ def plot_depths(tbl, ax, meta_data=None, hline=10):
                   clip_on=False,
                   transform=ax.transAxes)
 
-def main(bam_files, outpdf, primer_bed=None, fa_file=None, num_cpu=1):
+def main(bam_files, outpdf, primer_bed=None, highlight_arg=None, fa_file=None, num_cpu=1):
 
     if fa_file == None:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
@@ -323,6 +350,11 @@ def main(bam_files, outpdf, primer_bed=None, fa_file=None, num_cpu=1):
         executed2 = [executor.submit(samtools_stats, bam) for bam in bam_files]
 
     stats = [ex.result() for ex in executed2]
+
+    if highlight_arg:
+        highlights=highlight_arg.split(',')
+    else:
+        highlights=[]
 
     n_sample = len(bam_files)
 
@@ -350,7 +382,7 @@ def main(bam_files, outpdf, primer_bed=None, fa_file=None, num_cpu=1):
                     meta_data = meta_data,
                     hline=10)
         if primer_bed != None:
-            add_amplicons(primer_bed, ax)
+            add_amplicons(primer_bed, ax, highlights=highlights)
         add_genes(ax)
         if fa_file != None:
             add_mismatch(depth_tbls[i], ax, threashold = 0.8, primer_bed=primer_bed)
@@ -371,12 +403,17 @@ if __name__=='__main__':
                         '--bams',
                         nargs='*',
                         help='Paths for input BAMs')
-    parser.add_argument('-p',
-                        '--primer', default=None,
-                        help='primer_region in BED format')
     parser.add_argument('-o',
                         '--out',
                         help='Output PDF file name')
+    parser.add_argument('-p',
+                        '--primer', default=None,
+                        help='Primer regions in BED format [optional]')
+    parser.add_argument('-l',
+                        '--highlights', default=None,
+                        help='Add highlights on selected amplicons. '
+                             'Give amplicon numbers delimited by comma (e.g. 18,76,...) '
+                             'Can only be used with the -p --primer option. [optional]')
     parser.add_argument('-r',
                         '--ref_fa', default=None,
                         help='Reference fasta file [optional]')
@@ -390,8 +427,8 @@ if __name__=='__main__':
         sys.exit('-o (--out) option is mandate')
     if not args.bams:
         sys.exit('-i (--bams) option is mandate')
-    # if not args.primer:
-    #     sys.exit('-p (--primer) option is mandate')
+    if args.highlights and not args.primer:
+        sys.exit('-l can be used only with the -p (--primer) option')
 
     for file in args.bams:
         if not os.path.isfile(file):
@@ -404,5 +441,6 @@ if __name__=='__main__':
     main(args.bams,
          args.out,
          primer_bed=args.primer,
+         highlight_arg=args.highlights,
          fa_file=args.ref_fa,
          num_cpu=args.threads)
