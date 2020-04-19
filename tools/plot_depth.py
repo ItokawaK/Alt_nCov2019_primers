@@ -17,6 +17,7 @@ import numpy as np
 import re
 from concurrent.futures import ProcessPoolExecutor
 import signal
+import matplotlib.transforms as transforms
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -28,7 +29,7 @@ def samtools_depth(bam_file):
     out = p1.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
-                            'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  0.7 for i in out]
+                            'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  0.9 for i in out]
                            })
 
     return out_tbl
@@ -92,7 +93,7 @@ def samtools_mpileup(bam_file, ref_fa):
     #return out
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
                             'REF_BASE': [i[2] for i in out],
-                            'DEPTH':  [int(i[3]) if int(i[3]) > 0 else  0.7 for i in out],
+                            'DEPTH':  [int(i[3]) if int(i[3]) > 0 else  0.9 for i in out],
                             'MISMATCHES':  [count_mismtaches(readbase_parser(i[4])) for i in out]
                            })
 
@@ -140,33 +141,40 @@ def add_genes(ax):
         g_start = row['Start']
         g_end = row['End']
         g_name = row['Name']
-        y1 = 0.2
-        y2 = 0.3
+        ymin = 1/6 * 0.2
+        height = 1/6 * 0.15
         if index % 2 == 1:
-            y1 += 0.05
-            y2 += 0.05
-            text_y = 0.4
+            ymin += 1/6 *0.05
+            text_y = ymin + height
+            text_va = 'bottom'
         else:
-            text_y =0.15
+            text_y = ymin - 1/6 * 0.02
+            text_va = 'top'
 
-        r = patches.Rectangle(xy=(g_start, y1),
+        trans = transforms.blended_transform_factory(ax.transData, ax.transAxes)
+
+        r = patches.Rectangle(xy=(g_start, ymin),
                         width= g_end - g_start,
-                        height = y2-y1,
+                        height = height,
                         fc='#606020',
                         ec='k',
-                        zorder=101)
+                        linewidth=0.5,
+                        zorder=101,
+                        transform=trans)
         ax.add_patch(r)
         ax.text(x=(g_start + g_end)/2,
           y=text_y,
           s=g_name,
           ha='center',
-          va='center',
+          va=text_va,
           fontsize=3,
           weight = 'bold',
-          zorder=102
+          zorder=102,
+          transform=trans
           )
 
-def add_amplicons(primer_bed, ax, highlights=[], ymax=0.8, ymin=0.5):
+def add_amplicons(primer_bed, ax, highlights=[], ymax=1/6 *0.92, ymin=1/6*0.55):
+
 
     df = pd.read_csv(primer_bed, sep='\t', header = None)
 
@@ -200,9 +208,11 @@ def add_amplicons(primer_bed, ax, highlights=[], ymax=0.8, ymin=0.5):
     '''
 
     base1 = ymin
-    top1 = 10 ** (np.log10(ymax * ymin) / 2)
-    base2 = 10 ** (np.log10(ymax * ymin) / 2)
+    top1 = (ymax + ymin)/2
+    base2 = (ymax + ymin)/2
     top2 = ymax
+
+    trans = transforms.blended_transform_factory(ax.transData, ax.transAxes)
 
     for id in amplicon_ids:
         id_num = int(id)
@@ -228,93 +238,69 @@ def add_amplicons(primer_bed, ax, highlights=[], ymax=0.8, ymin=0.5):
                               linewidth = 0.5,
                               fc=fc,
                               ec='k',
-                              zorder=101)
+                              zorder=101,
+                              transform = trans)
         ax.add_patch(r)
         ax.text(x=(x1+x2)/2,
-                y=10 ** (np.log10(base*top)/2),
+                y=(base+top)/2,
                 s=id,
                 ha='center',
                 va='center',
-                fontsize=2.8,
+                fontsize=3.5,
                 weight='bold',
-                zorder=102
-                )
+                zorder=102,
+                transform= trans)
 
         if id in highlights:
 
-            ax.axvspan(
-              x1,
-              x2,
-              alpha=0.5,
-              color=fc,
-              zorder=50
-            )
+            r = patches.Rectangle(xy=(x1, 1/6),
+                                  width=x2-x1,
+                                  height=5/6,
+                                  linewidth = 0,
+                                  fc=fc,
+                                  alpha=0.5,
+                                  zorder=50,
+                                  transform = trans)
+            ax.add_patch(r)
 
             if id_num%2==1:
-                y=4000
+                y = 0.97
             else:
-                y=6000
+                y = 1.0
 
             ax.text(
                 x=(x1+x2)/2,
                 y=y,
                 s=id,
                 ha='center',
-                va='bottom',
+                va='top',
                 fontsize=5,
                 weight='bold',
-                zorder=55
+                zorder=55,
+                transform=trans
             )
 
-def plot_depths(tbl, ax, meta_data=None, hline=10):
+def set_plot_area(ax, max_hight=10000):
 
     # Setting x and y labels
     ax.set_ylabel('Depth')
     ax.set_xlabel('Genome position nt')
 
-
-    # Adding vertical strips for highlight
-    # for i in range(1,99):
-    #   if i%2 == 1:
-    #       my_col = 'red'
-    #   else:
-    #       my_col = 'green'
-    #
-    #   ax.axvspan(primer_hash[str(i)]['start'],
-    #               primer_hash[str(i)]['end'],
-    #               alpha=0.2,
-    #               color=my_col
-    #             )
-
-    # Plotting depths
-
-    ax.fill([np.min(tbl['POS'])] + list(tbl['POS']) + [np.max(tbl['POS'])],
-            [0.7] + list(tbl['DEPTH'] ) + [0.7],
-            '#A0A0A0',
-            zorder=52)
-
-    ax.axhspan(0.1, 0.83, fc='w', zorder=100) # masking
-
     ax.axhline(1, color='k', linewidth=0.5, zorder=102) # line at depth=1
-
-    # Adding a horizontal line at hline
-    ax.axhline(hline,
-               color='k',
-               linestyle=':',
-               linewidth=0.8,
-               zorder=103)
 
     # Ticks
     #ymax = np.ceil(tbl['DEPTH'].max() / 10000) * 10000
+
+    ax.set_xlim(0, 30000)
     ax.set_xticks([i * 1000 for i in range(1,30)], minor=True)
     ax.set_xticks([i * 5000 for i in range(7)])
     ax.set_xticklabels([str(i * 5000) for i in range(7)], fontsize='8')
 
     ax.set_yscale('log')
-    ax.set_ylim(0.12, 10000)
+    ymin = 10**-(np.log10(max_hight)/5)
+    ax.set_ylim(ymin, max_hight)
     ax.yaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_minor_formatter(NullFormatter())
-
 
     ax.set_yticks([i * ii  for ii in (1,10,100,1000) for i in range(1,11)],
                   minor=True)
@@ -322,18 +308,6 @@ def plot_depths(tbl, ax, meta_data=None, hline=10):
     ax.set_yticklabels([str(i) for i in (1,10,100,1000,10000)], fontsize='8')
 
 
-    # Some information at the right side of figure
-
-    if meta_data != None:
-        x,y = np.array([[1, 1.04], [0.85, 0.85]])
-        h_offset = 0.01
-        for i in range(len(meta_data)):
-          ax.text(x[0] + h_offset,
-                  y[0] -0.04- (0.04 * i),
-                  '{}: {}'.format(meta_data[i][0], meta_data[i][1]),
-                  fontsize='6',
-                  clip_on=False,
-                  transform=ax.transAxes)
 
 def main(bam_files, outpdf, primer_bed=None, highlight_arg=None, fa_file=None, num_cpu=1):
 
@@ -372,15 +346,34 @@ def main(bam_files, outpdf, primer_bed=None, highlight_arg=None, fa_file=None, n
         #     tbl = samtools_depth(bam_files[i])
 
         align_stats = stats[i]
-        meta_data = [('Total Seq.', '{:.1f} Mb'.format(align_stats[0]/1e6)),
-                     ('Paired properly', '{:.1%} '.format(align_stats[1]))]
+        meta_data = ['Total Seq: {:.1f} Mb'.format(align_stats[0]/1e6),
+                     'Paired properly: {:.1%}'.format(align_stats[1])]
         title = os.path.basename(bam_files[i])
         ax = fig.add_subplot(n_sample, 1, i+1)
         ax.set_title(title)
-        plot_depths(depth_tbls[i],
-                    ax,
-                    meta_data = meta_data,
-                    hline=10)
+        set_plot_area(ax, max_hight=10000)
+        tbl = depth_tbls[i]
+
+        ax.fill([np.min(tbl['POS'])] + list(tbl['POS']) + [np.max(tbl['POS'])],
+            [0.9] + list(tbl['DEPTH'] ) + [0.9],
+            '#A0A0A0',
+            zorder=52)
+
+        # Horizontal line at 10
+        ax.axhline(10,
+               color='k',
+               linestyle=':',
+               linewidth=0.8,
+               zorder=103)
+
+        # Adding supportive data
+        ax.text(1.01, 0.7,
+               '\n'.join(meta_data),
+                fontsize=5,
+                ha='left',
+                transform=ax.transAxes)
+
+
         if primer_bed != None:
             add_amplicons(primer_bed, ax, highlights=highlights)
         add_genes(ax)
@@ -396,7 +389,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.7
+    _version = 0.8
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
