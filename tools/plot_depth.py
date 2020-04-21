@@ -21,6 +21,13 @@ import matplotlib.transforms as transforms
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+color_scheme = {'plot_fc': 'gray',
+                'primerP1_fc':'#ff5353',
+                'primerP2_fc':'#5fefc7',
+                'gene_fc':'#ffe17f',
+                'mismatch_normal':'#ffe17f',
+                'mismatch_primer':'red',
+                }
 
 # samtools depth analysis runner
 def samtools_depth(bam_file):
@@ -50,10 +57,12 @@ def samtools_stats(bam_file):
             total_l = int(l[2])
         elif l[1] == 'percentage of properly paired reads (%):':
             per_paired = float(l[2]) / 100
+
     return((total_l, per_paired))
 
 # samtools mpileup runner
 def samtools_mpileup(bam_file, ref_fa):
+
     def readbase_parser(read_base_str):
         i = 0
         split_bases = []
@@ -102,6 +111,7 @@ def samtools_mpileup(bam_file, ref_fa):
 # Adding lines for mismatches in plot
 # Detecting mismatches contained in primer region
 def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
+
     if primer_bed:
         df = pd.read_csv(primer_bed, sep='\t', header = None)
         def is_contained(pos, df):
@@ -120,12 +130,13 @@ def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
         if row['MISMATCHES'] > row['DEPTH'] * threashold:
             x = row['POS']
             y = row['MISMATCHES']
-            col = '#F4D03F'
+            col = color_scheme['mismatch_normal']
             if primer_bed and is_contained(x, df):
-                col = '#E74C3C'
+                col = color_scheme['mismatch_primer']
             ax.plot([x,x],[1,y],
                     color = col,
-                    linewidth=0.5)
+                    linewidth=0.5,
+                    zorder= 120)
 
 # Adding gene boxes
 def add_genes(ax):
@@ -156,7 +167,7 @@ def add_genes(ax):
         r = patches.Rectangle(xy=(g_start, ymin),
                         width= g_end - g_start,
                         height = height,
-                        fc='#606020',
+                        fc=color_scheme['gene_fc'],
                         ec='k',
                         linewidth=0.5,
                         zorder=101,
@@ -174,7 +185,6 @@ def add_genes(ax):
           )
 
 def add_amplicons(primer_bed, ax, highlights=[], ymax=1/6 *0.92, ymin=1/6*0.55):
-
 
     df = pd.read_csv(primer_bed, sep='\t', header = None)
 
@@ -221,16 +231,15 @@ def add_amplicons(primer_bed, ax, highlights=[], ymax=1/6 *0.92, ymin=1/6*0.55):
             base = base1
             top = top1
             h = top1 - base1
-            fc = '#608020'
+            fc = color_scheme['primerP1_fc']
         else:
             base = base2
             top = top2
             h = top2 - base2
-            fc = '#E0E080'
+            fc = color_scheme['primerP2_fc']
 
         x1 = amplicon_dict[id]['start']
         x2 = amplicon_dict[id]['end']
-
 
         r = patches.Rectangle(xy=(x1, base),
                               width=x2-x1,
@@ -298,16 +307,25 @@ def set_plot_area(ax, max_hight=10000):
 
     ax.set_yscale('log')
     ymin = 10**-(np.log10(max_hight)/5)
+    # For linear scale
+    # ymin = -(max_hight)/5
+
     ax.set_ylim(ymin, max_hight)
     ax.yaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_minor_formatter(NullFormatter())
 
-    ax.set_yticks([i * ii  for ii in (1,10,100,1000) for i in range(1,11)],
-                  minor=True)
-    ax.set_yticks([1, 10, 100, 1000, 10000])
-    ax.set_yticklabels([str(i) for i in (1,10,100,1000,10000)], fontsize='8')
+    y_major_ticks = [el for el in ax.get_yticks() if el >=1 and el <= max_hight]
+    y_minor_ticks = [el for el in ax.get_yticks(minor=True) if el >1 and el < max_hight]
+    ax.set_yticks(y_major_ticks)
+    ax.set_yticks(y_minor_ticks, minor=True)
+    ax.set_yticklabels([str(int(el)) for el in y_major_ticks])
 
-
+    # ax.set_ylim(ymin, max_hight)
+    #
+    # ax.set_yticks([i * ii  for ii in (1,10,100,1000) for i in range(1,11)],
+    #               minor=True)
+    # ax.set_yticks([1, 10, 100, 1000, 10000])
+    # ax.set_yticklabels([str(i) for i in (1,10,100,1000,10000)], fontsize='8')
 
 def main(bam_files, outpdf, primer_bed=None, highlight_arg=None, fa_file=None, num_cpu=1):
 
@@ -355,9 +373,9 @@ def main(bam_files, outpdf, primer_bed=None, highlight_arg=None, fa_file=None, n
         tbl = depth_tbls[i]
 
         ax.fill([np.min(tbl['POS'])] + list(tbl['POS']) + [np.max(tbl['POS'])],
-            [0.9] + list(tbl['DEPTH'] ) + [0.9],
-            '#A0A0A0',
-            zorder=52)
+                [0.9] + list(tbl['DEPTH']) + [0.9],
+                color_scheme['plot_fc'],
+                zorder=52)
 
         # Horizontal line at 10
         ax.axhline(10,
@@ -368,17 +386,18 @@ def main(bam_files, outpdf, primer_bed=None, highlight_arg=None, fa_file=None, n
 
         # Adding supportive data
         ax.text(1.01, 0.7,
-               '\n'.join(meta_data),
+                '\n'.join(meta_data),
                 fontsize=5,
                 ha='left',
                 transform=ax.transAxes)
-
 
         if primer_bed != None:
             add_amplicons(primer_bed, ax, highlights=highlights)
         add_genes(ax)
         if fa_file != None:
-            add_mismatch(depth_tbls[i], ax, threashold = 0.8, primer_bed=primer_bed)
+            add_mismatch(depth_tbls[i], ax,
+                         threashold = 0.8,
+                         primer_bed=primer_bed)
 
         labels = [item.get_text() for item in ax.get_yticklabels()]
 
@@ -418,16 +437,20 @@ if __name__=='__main__':
 
     if not args.out:
         sys.exit('-o (--out) option is mandate')
+
     if not args.bams:
         sys.exit('-i (--bams) option is mandate')
+
     if args.highlights and not args.primer:
         sys.exit('-l can be used only with the -p (--primer) option')
 
     for file in args.bams:
         if not os.path.isfile(file):
             sys.exit('{} was not found'.format(file))
+
     if args.primer and not os.path.isfile(args.primer):
         sys.exit('{} was not found'.format(args.primer))
+
     if args.ref_fa and not os.path.isfile(args.ref_fa):
         sys.exit('{} was not found'.format(args.ref_fa))
 
