@@ -59,7 +59,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
  1. Finds fragment ends *contained* in a primer region.
  1. Trims sequence overlapping the primer region.
 
-    Note that this program work conservatively, it throw away all soft masked parts and reads not mapped in proper pair (non 0x2 bit flag).
+    Note that this program work conservatively, it may throw away all soft masked ends if subjected to trimming.
 
 ![trimming_image](https://user-images.githubusercontent.com/38896687/78016726-2a41f900-7386-11ea-8dfd-a3960ee3283f.PNG)
 
