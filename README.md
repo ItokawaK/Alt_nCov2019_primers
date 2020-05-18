@@ -71,7 +71,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
  ```
    Usage:
 
-      bwa mem nCov_bwadb untrimmed_R1.fq untrimmed_R2.fq |
+      bwa mem nCov_bwadb untrimmed_R1.fq untrimmed_R2.fq | \
          trim_primer_parts.py [--gziped] primer.bed trimmed_R1 trimmed_R2
   ```
 
