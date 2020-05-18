@@ -24,51 +24,64 @@ BED_FILE = args.primer_bed
 
 primer_range = Primer_range(BED_FILE)
 
+# [+strand alignment, -strand alignment]
 alignment_bucket = [None, None]
+
 out_buffer1 = []
 out_buffer2 = []
 cnt = 0
-current_read = "default"
+current_read = 'default' # Current read name
 for sam_line in sys.stdin:
+    # Skip header
     if sam_line.startswith('@'):
         continue
 
     alignment = Alignment(sam_line.rstrip())
 
+    # Initialize alignment backet
     if current_read != alignment.read_name:
         alignment_bucket = [None, None]
         current_read = alignment.read_name
 
+    # Skip primary and supplemental alignments
     if alignment.flag & (256 + 2048):
         continue
 
-    if alignment.strand == "+":
+    if alignment.strand == '+':
         alignment_bucket[0] = alignment
-    elif alignment.strand == "-":
+    elif alignment.strand == '-':
         alignment_bucket[1] = alignment
 
+    # process if the bucket is full
     if alignment_bucket[0] and alignment_bucket[1]:
 
         fragment = Fragment(alignment_bucket[0], alignment_bucket[1])
-        range_left = primer_range.is_contained(fragment.ref_start, "left")
-        range_right = primer_range.is_contained(fragment.ref_end, "right")
 
+        # Check if fragment ends are conteined in a primer region
+        # Return range if True, None otherwise.
+        range_left = primer_range.is_contained(fragment.ref_start, 'left')
+        range_right = primer_range.is_contained(fragment.ref_end, 'right')
+
+        # Chop ends of the fragment overlapping to primer
         fragment.slice(range_left)
         fragment.slice(range_right)
 
         if args.verbose:
-            sys.stderr.write(current_read + ":")
-            sys.stderr.write("  Fragment interval: {}-{}\n".format(fragment.ref_start, fragment.ref_end))
-            sys.stderr.write("  Left part overlapped with: {}\n".format(range_left))
-            sys.stderr.write("  Right part overlapped with: {}\n".format(range_right))
-            sys.stderr.write("    Left clipped: {}\n".format(fragment.left_trimmed))
-            sys.stderr.write("    Right clipped: {}\n".format(fragment.right_trimmed))
+            sys.stderr.write(current_read + ':')
+            sys.stderr.write('  Fragment interval: {}-{}\n'.format(fragment.ref_start, fragment.ref_end))
+            sys.stderr.write('  Left part overlapped with: {}\n'.format(range_left))
+            sys.stderr.write('  Right part overlapped with: {}\n'.format(range_right))
+            sys.stderr.write('    Left clipped: {}\n'.format(fragment.left_trimmed))
+            sys.stderr.write('    Right clipped: {}\n'.format(fragment.right_trimmed))
 
+        # Get fasta string list
         fastq_lines = fragment.get_fastqlines()
 
+        # Create fasta string
         out_read1 = "\n".join(fastq_lines[0]) + "\n"
         out_read2 = "\n".join(fastq_lines[1]) + "\n"
 
+        # Push fasta string to output buffer
         if args.gzip:
             out_read1 = out_read1.encode()
             out_read2 = out_read2.encode()
@@ -76,6 +89,7 @@ for sam_line in sys.stdin:
         out_buffer1.append(out_read1)
         out_buffer2.append(out_read2)
 
+# Write fasta
 if args.gzip:
     f1 = gzip.open(args.fastq_1 + '.gz', 'wb', compresslevel=3)
     f2 = gzip.open(args.fastq_2 + '.gz', 'wb', compresslevel=3)
