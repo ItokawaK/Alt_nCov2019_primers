@@ -15,8 +15,8 @@ doi: https://doi.org/10.1101/2020.03.10.985150
 https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
 
 ### Primer version (updated on 2020/5/18)
-- ver_niid-200325: Including the 5 primer exchanges as described in the [preprint](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
- - ver_niid-200407: Including the 5 primer exchanges as described in the [preprint](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
+- Primers/ver_niid-200325: Including the 5 primer exchanges as described in the [preprint](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
+- Primersver_niid-200407: Including the 5 primer exchanges as described in the [preprint](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
 
 ### Tools
 -------
