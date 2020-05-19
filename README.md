@@ -47,7 +47,7 @@ https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
       -t THREADS, --threads THREADS
                           Num tasks to process concurrently [optional]
   ```
-    If `-r` option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time.
+    If `-r` option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time. Yellow and red lines indicate mismatches out of and inside of a primer target region, respecitively.
 
     Output image
 
