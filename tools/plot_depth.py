@@ -31,10 +31,10 @@ color_scheme = {'plot_fc': 'gray',
 
 # samtools depth analysis runner
 
-def filter_softlipped(bam_file):
+def filter_softclipped(bam_file):
     p0 = subprocess.Popen(['samtools','view','-h', bam_file],
                           stdout = subprocess.PIPE)
-    p1 = subprocess.Popen(['awk', '/^@/ || $6~!/S/'],
+    p1 = subprocess.Popen(['awk', '/^@/ || $6!~/S/'],
                           stdin = p0.stdout,
                           stdout = subprocess.PIPE)
 
@@ -43,13 +43,7 @@ def filter_softlipped(bam_file):
 def samtools_depth(bam_file, remove_softclipped=False, min_readlen=0):
 
     if remove_softclipped:
-        # p0 = subprocess.Popen(['samtools','view','-h', bam_file],
-        #                       stdout = subprocess.PIPE)
-        # p1 = subprocess.Popen(['awk', '/^@/ || $6~!/S/'],
-        #                       stdin = p0.stdout,
-        #                       stdout = subprocess.PIPE)
-
-        p1 = filter_softlipped(bam_file)
+        p1 = filter_softclipped(bam_file)
         p2 = subprocess.Popen(['samtools','depth','-a', '-l', str(min_readlen),'-'],
                               stdin = p1.stdout,
                               stdout = subprocess.PIPE)
