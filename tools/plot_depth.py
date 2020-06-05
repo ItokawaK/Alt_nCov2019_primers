@@ -30,10 +30,34 @@ color_scheme = {'plot_fc': 'gray',
                 }
 
 # samtools depth analysis runner
-def samtools_depth(bam_file):
-    p1 = subprocess.Popen(['samtools','depth','-a', bam_file],
-                       stdout = subprocess.PIPE)
-    out = p1.communicate()[0]
+
+def filter_softlipped(bam_file):
+    p0 = subprocess.Popen(['samtools','view','-h', bam_file],
+                          stdout = subprocess.PIPE)
+    p1 = subprocess.Popen(['awk', '/^@/ || $6~!/S/'],
+                          stdin = p0.stdout,
+                          stdout = subprocess.PIPE)
+
+    return p1
+
+def samtools_depth(bam_file, remove_softclipped=False, min_readlen=0):
+
+    if remove_softclipped:
+        # p0 = subprocess.Popen(['samtools','view','-h', bam_file],
+        #                       stdout = subprocess.PIPE)
+        # p1 = subprocess.Popen(['awk', '/^@/ || $6~!/S/'],
+        #                       stdin = p0.stdout,
+        #                       stdout = subprocess.PIPE)
+
+        p1 = filter_softlipped(bam_file)
+        p2 = subprocess.Popen(['samtools','depth','-a', '-l', str(min_readlen),'-'],
+                              stdin = p1.stdout,
+                              stdout = subprocess.PIPE)
+    else:
+        p2 = subprocess.Popen(['samtools','depth','-a','-l', str(min_readlen), bam_file],
+                              stdout = subprocess.PIPE)
+
+    out = p2.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
                             'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  0.9 for i in out]
@@ -327,11 +351,12 @@ def set_plot_area(ax, max_hight=10000):
     # ax.set_yticks([1, 10, 100, 1000, 10000])
     # ax.set_yticklabels([str(i) for i in (1,10,100,1000,10000)], fontsize='8')
 
-def main(bam_files, outpdf, primer_bed=None, highlight_arg=None, fa_file=None, num_cpu=1):
+def main(bam_files, outpdf, primer_bed=None, highlight_arg=None,
+         fa_file=None, num_cpu=1, mismatches_thresh=0.8, remove_softclipped=False, min_readlen=0):
 
     if fa_file == None:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
-            executed1 = [executor.submit(samtools_depth, bam) for bam in bam_files]
+            executed1 = [executor.submit(samtools_depth, bam, remove_softclipped, min_readlen) for bam in bam_files]
     else:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
             executed1 = [executor.submit(samtools_mpileup, bam, fa_file) for bam in bam_files]
@@ -396,7 +421,7 @@ def main(bam_files, outpdf, primer_bed=None, highlight_arg=None, fa_file=None, n
         add_genes(ax)
         if fa_file != None:
             add_mismatch(depth_tbls[i], ax,
-                         threashold = 0.8,
+                         threashold=mismatches_thresh,
                          primer_bed=primer_bed)
 
         labels = [item.get_text() for item in ax.get_yticklabels()]
@@ -408,7 +433,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.8
+    _version = 0.9
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
@@ -432,6 +457,16 @@ if __name__=='__main__':
     parser.add_argument('-t',
                         '--threads', default=1, type=int,
                         help='Num tasks to process concurrently [optional]')
+    parser.add_argument('-m',
+                        '--mismatches_thresh', default=0.8, type=float,
+                        help='Show mismatches higher than this ratio (default=0.8). '
+                             'Only effective with the -r option [optional]')
+    parser.add_argument('-s',
+                        '--ignore_softclipped', action='store_true',
+                        help='Ignore softclipped reads (default=False). [optional]')
+    parser.add_argument('--min_readlen', default=0, type=int,
+                        help='Minumum length of read (default=0). [optional]')
+
 
     args = parser.parse_args()
 
@@ -459,4 +494,7 @@ if __name__=='__main__':
          primer_bed=args.primer,
          highlight_arg=args.highlights,
          fa_file=args.ref_fa,
-         num_cpu=args.threads)
+         num_cpu=args.threads,
+         mismatches_thresh=args.mismatches_thresh,
+         remove_softclipped=args.ignore_softclipped,
+         min_readlen=args.min_readlen)
