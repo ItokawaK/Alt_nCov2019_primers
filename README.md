@@ -5,18 +5,18 @@ Here we provide some resources regarding the alternative primers for the [ARTIC 
 
 See below article for detail of the modifications:
 
-[**A proposal of alternative primers for the ARTIC Network's multiplex PCR to improve coverage of SARS-CoV-2 genome sequencing**](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) (ver. 3)
+[**Disentangling primer interactions improves SARS-CoV-2 genome sequencing by the ARTIC Network’s multiplex PCR**](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4) (ver. 4)
 
  Kentaro Itokawa, Tsuyoshi Sekizuka, Masanori Hashino, Rina Tanaka, Makoto Kuroda
 
 doi: https://doi.org/10.1101/2020.03.10.985150
 
-https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3
+https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4
 
 ### Primer version (updated on 2020/5/18)
-- Primers/ver_niid-200325/: Including the 5 primer exchanges as described in the [preprint](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
-- Primers/ver_niid-200407/: Including the 5 primer exchanges as described in the [preprint](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
-- Primers/ver_N1/: Including the 12 primer exchanges as described in the recent [preprint](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf)
+- Primers/ver_niid-200325/: Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
+- Primers/ver_niid-200407/: Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
+- Primers/ver_N1/: Including the 12 primer exchanges as described in the recent [preprint ver.4](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf)
 
 
 ### Tools
