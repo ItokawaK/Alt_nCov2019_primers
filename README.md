@@ -13,9 +13,9 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 - Primers/ver_N1/: Including the 12 primer exchanges as described in the [preprint ver.4](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf) and [peer-reviewed paper in PLOS ONE](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403)
 
 
-### Tools
+## Tools
 -------
-- tools/plot_depth.py
+### tools/plot_depth.py
 
    Generates depth plots in sigle PDF file from multiple BAM files to briefly check coverages.
 
@@ -55,7 +55,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 
 ![plot_depth_out_image_2](https://user-images.githubusercontent.com/38896687/78553244-e8142e00-7843-11ea-8c40-e27a0f2066a6.png)
 
-- tools/trim_primers/trim_primer_parts.py
+### tools/trim_primers/trim_primer_parts.py
 
     Trim primer parts of paired-end reads obtained from illumina machines.
 
