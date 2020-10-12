@@ -5,18 +5,12 @@ Here we provide some resources regarding the alternative primers for the [ARTIC 
 
 See below article for detail of the modifications:
 
-[**Disentangling primer interactions improves SARS-CoV-2 genome sequencing by the ARTIC Network’s multiplex PCR**](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4) (ver. 4)
-
- Kentaro Itokawa, Tsuyoshi Sekizuka, Masanori Hashino, Rina Tanaka, Makoto Kuroda
-
-doi: https://doi.org/10.1101/2020.03.10.985150
-
-https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4
+[Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer interactions improves SARS-CoV-2 genome sequencing by multiplex tiling PCR. PLoS ONE 15(9): e0239403.]((https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403))
 
 ### Primer version (updated on 2020/5/18)
 - Primers/ver_niid-200325/: Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
 - Primers/ver_niid-200407/: Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
-- Primers/ver_N1/: Including the 12 primer exchanges as described in the recent [preprint ver.4](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf)
+- Primers/ver_N1/: Including the 12 primer exchanges as described in the recent [preprint ver.4](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf) and [peer reviewed paper in PlosONE](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403)
 
 
 ### Tools
