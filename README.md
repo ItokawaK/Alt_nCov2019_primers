@@ -15,8 +15,6 @@ See below article for detail of the modifications:
 
 ### Tools
 -------
- Those tools are still experimental and have no warranty to work properly.
-
 - tools/plot_depth.py
 
    Generates depth plots in sigle PDF file from multiple BAM files to briefly check coverages.
