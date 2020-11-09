@@ -214,7 +214,7 @@ def add_amplicons(primer_bed, ax, highlights=[], ymax=1/6 *0.92, ymin=1/6*0.55):
         start = row[1]
         end = row[2]
         primer_name = row[3]
-        prefix, amplicom_id, primer_direction = primer_name.split('_')
+        prefix, amplicom_id, primer_direction, *_ = primer_name.split('_')
         if amplicom_id not in amplicon_dict:
             amplicon_dict[amplicom_id] = {}
             amplicon_dict[amplicom_id]['start'] = 0
