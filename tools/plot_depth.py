@@ -78,6 +78,33 @@ def samtools_stats(bam_file):
 
     return((total_l, per_paired))
 
+class Mismatch:
+    def __init__(self, pos, refbase, altbase, type):
+        self.pos = pos
+        self.refbase = refbase
+        self.altbase = altbase
+        self.type = type # mismatch, deletion. insertion
+
+    @property
+    def show_mismatch(self):
+        if self.type == 'mismatch':
+            return f'{self.refbase}{self.pos}{self.altbase}'
+        elif self.type == 'deletion':
+            if len(self.altbase) < 4:
+                _alt = self.altbase
+            else:
+                _alt = self.altbase[0:4] + '...'
+            return f'del_{self.pos}{_alt}'
+        elif self.type == 'deletion':
+            if len(self.altbase) < 4:
+                _alt = self.altbase
+            else:
+                _alt = self.altbase[0:4] + '...'
+            return f'ins_{self.pos}{_alt}'
+    @property
+    def length(self):
+        return len(self.altbase)
+
 # samtools mpileup runner
 def samtools_mpileup(bam_file, ref_fa):
 
@@ -113,6 +140,22 @@ def samtools_mpileup(bam_file, ref_fa):
                 cnt += 1
         return cnt
 
+    def count_mismtaches2(read_bases):
+        alt_bases = {'A':0, 'T':0, 'G':0, 'C':0}
+        for base in read_bases:
+            if base in 'Aa':
+                alt_bases['A'] += 1
+            elif base in 'Tt':
+                alt_bases['T'] += 1
+            elif base in 'Gg':
+                alt_bases['G'] += 1
+            elif base in 'Cc':
+                alt_bases['C'] += 1
+
+        inverse = [(cnt, base) for base, cnt in alt_bases.items()]
+        max_cnt, max_base = max(inverse)
+        return (max_cnt, max_base)
+
     p1 = subprocess.Popen(['samtools','mpileup', '-f', ref_fa, '-ax', bam_file],
                        stdout = subprocess.PIPE)
     out = p1.communicate()[0]
@@ -121,7 +164,7 @@ def samtools_mpileup(bam_file, ref_fa):
     out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
                             'REF_BASE': [i[2] for i in out],
                             'DEPTH':  [int(i[3]) if int(i[3]) > 0 else  0.9 for i in out],
-                            'MISMATCHES':  [count_mismtaches(readbase_parser(i[4])) for i in out]
+                            'MISMATCHES':  [count_mismtaches2(readbase_parser(i[4])) for i in out]
                            })
 
     return out_tbl
@@ -129,6 +172,8 @@ def samtools_mpileup(bam_file, ref_fa):
 # Adding lines for mismatches in plot
 # Detecting mismatches contained in primer region
 def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
+
+    MIN_NUM_MISMATH = 2
 
     if primer_bed:
         df = pd.read_csv(primer_bed, sep='\t', header = None)
@@ -144,10 +189,16 @@ def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
             return False
 
     xy = []
+    count = 0
     for index, row in tbl.iterrows():
-        if row['MISMATCHES'] > row['DEPTH'] * threashold:
+        mismatch_cnt = row['MISMATCHES'][0]
+        mismatch_base = row['MISMATCHES'][1]
+        if mismatch_cnt < MIN_NUM_MISMATH:
+            continue
+        if mismatch_cnt > row['DEPTH'] * threashold:
             x = row['POS']
-            y = row['MISMATCHES']
+            y = mismatch_cnt
+            ref_base = row['REF_BASE']
             col = color_scheme['mismatch_normal']
             if primer_bed and is_contained(x, df):
                 col = color_scheme['mismatch_primer']
@@ -155,6 +206,14 @@ def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
                     color = col,
                     linewidth=0.5,
                     zorder= 120)
+            # Adding a label for the mismatch base and position
+            ax.text(x=x,
+                    y=np.sqrt(y) / ((count % 2) + 1),
+                    s=f'{ref_base}{x}{mismatch_base}',
+                    fontsize=2,
+                    zorder=120,
+                    color='#363636')
+            count += 1
 
 # Adding gene boxes
 def add_genes(ax):
