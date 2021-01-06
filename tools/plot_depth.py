@@ -15,6 +15,7 @@ import os
 import pandas as pd
 import numpy as np
 import re
+from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 import signal
 import matplotlib.transforms as transforms
@@ -79,101 +80,161 @@ def samtools_stats(bam_file):
     return((total_l, per_paired))
 
 class Mismatch:
-    def __init__(self, pos, refbase, altbase, type):
+    def __init__(self, pos, refbase, altbase, count, type):
         self.pos = pos
         self.refbase = refbase
         self.altbase = altbase
-        self.type = type # mismatch, deletion. insertion
+        self.count = count
+        self.type = type # snp, del. ins
 
     @property
     def show_mismatch(self):
-        if self.type == 'mismatch':
+
+        MAX_CHAR = 20
+        if self.type == 'snp':
             return f'{self.refbase}{self.pos}{self.altbase}'
-        elif self.type == 'deletion':
-            if len(self.altbase) < 4:
+        elif self.type == 'del':
+            if len(self.altbase) < MAX_CHAR:
                 _alt = self.altbase
             else:
-                _alt = self.altbase[0:4] + '...'
+                _alt = self.altbase[0:MAX_CHAR] + '...'
             return f'del_{self.pos}{_alt}'
-        elif self.type == 'deletion':
-            if len(self.altbase) < 4:
+        elif self.type == 'ins':
+            if len(self.altbase) < MAX_CHAR:
                 _alt = self.altbase
             else:
-                _alt = self.altbase[0:4] + '...'
+                _alt = self.altbase[0:MAX_CHAR] + '...'
             return f'ins_{self.pos}{_alt}'
     @property
     def length(self):
         return len(self.altbase)
 
 # samtools mpileup runner
-def samtools_mpileup(bam_file, ref_fa):
+def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
 
-    def readbase_parser(read_base_str):
+    def readbase_parser(mpileup_line):
+        read_base_str = mpileup_line[4]
+        pos = int(mpileup_line[1])
+        refbase = mpileup_line[2]
+        depth = int(mpileup_line[3])
+        MIN_NUM_MISMATH = 2
+        MIN_MISMATH_RATIO = threashold
+        MIN_INDEL_RATIO = threashold * 0.9
+
         i = 0
-        split_bases = []
+        # split_bases = []
+        mismatches = defaultdict(int)
+        indels = defaultdict(int)
         while i < len(read_base_str):
-            if read_base_str[i] in 'ATGCNatgcn.,*':
-                split_bases.append(read_base_str[i])
+            first_char = read_base_str[i]
+            if first_char in 'n.,*$':
                 i += 1
-            elif read_base_str[i] == '^':
+            elif first_char in 'ATGCatgc':
+                # split_bases.append(first_char.upper())
+                mismatches[first_char.upper()] += 1
+                i += 1
+            elif first_char == '^':
                 i += 2
-                split_bases.append(read_base_str[i])
-                i += 1
-            elif read_base_str[i] == '$':
-                i += 1
+                # split_bases.append(read_base_str[i])
+            # elif read_base_str[i] == '$':
+            #     i += 1
             elif read_base_str[i] in '+-':
-                indel_len_str = re.findall('^[\+-](\d+)', read_base_str[i:])[0]
+                indel_type, indel_len_str = re.findall('^([\+-])(\d+)', read_base_str[i:])[0]
                 i += 1
                 i += len(indel_len_str)
+                indel_seq = read_base_str[i:(i + int(indel_len_str))]
+                if indel_type == '-':
+                    indel_str = 'del_' +  indel_seq.upper()
+                elif indel_type == '+':
+                    indel_str = 'ins_' +  indel_seq.upper()
+                indels[indel_str] += 1
                 i += int(indel_len_str)
             else:
                 print('Unknown char: ' + read_base_str[i], file = sys.stderr)
                 print('Unknown char: ' + read_base_str, file = sys.stderr)
-                return split_bases
+                # return split_bases
 
-        return split_bases
+        # return split_bases
 
-    def count_mismtaches(read_bases):
-        cnt = 0
-        for base in read_bases:
-            if base in 'ATGCatgc':
-                cnt += 1
-        return cnt
+        out_mismatch = None
+        out_indel = None
+        if mismatches:
+            max_mismatch =  max([(cnt, base) for base, cnt in mismatches.items()])
+            mismatch_cnt = max_mismatch[0]
+            altbase = max_mismatch[1]
+            if (mismatch_cnt >= MIN_NUM_MISMATH) and (mismatch_cnt > (depth * MIN_MISMATH_RATIO)):
+                out_mismatch = Mismatch(pos, refbase, altbase, mismatch_cnt, 'snp')
+        # else:
+        #     out_mismatch = None
 
-    def count_mismtaches2(read_bases):
-        alt_bases = {'A':0, 'T':0, 'G':0, 'C':0}
-        for base in read_bases:
-            if base in 'Aa':
-                alt_bases['A'] += 1
-            elif base in 'Tt':
-                alt_bases['T'] += 1
-            elif base in 'Gg':
-                alt_bases['G'] += 1
-            elif base in 'Cc':
-                alt_bases['C'] += 1
+        if indels:
+            max_indel =  max([(cnt, base) for base, cnt in indels.items()])
+            indel_cnt = max_indel[0]
+            indel_str = max_indel[1]
+            if (indel_cnt >= MIN_NUM_MISMATH) and (indel_cnt > (depth * MIN_INDEL_RATIO)):
+                indel_type, indel_seq = indel_str.split("_")
+                out_indel = Mismatch(pos+1, refbase, indel_seq, indel_cnt, indel_type)
 
-        inverse = [(cnt, base) for base, cnt in alt_bases.items()]
-        max_cnt, max_base = max(inverse)
-        return (max_cnt, max_base)
+        #
+        # else:
+        #     out_indel = None
+
+        return (out_mismatch, out_indel)
+
+    # def count_mismtaches(read_bases):
+    #     cnt = 0
+    #     for base in read_bases:
+    #         if base in 'ATGCatgc':
+    #             cnt += 1
+    #     return cnt
+    #
+    # def count_mismtaches2(read_bases):
+    #     alt_bases = {'A':0, 'T':0, 'G':0, 'C':0}
+    #     indels = defaultdict(int)
+    #     for base in read_bases:
+    #         if base in 'Aa':
+    #             alt_bases['A'] += 1
+    #         elif base in 'Tt':
+    #             alt_bases['T'] += 1
+    #         elif base in 'Gg':
+    #             alt_bases['G'] += 1
+    #         elif base in 'Cc':
+    #             alt_bases['C'] += 1
+    #
+    #     inverse = [(cnt, base) for base, cnt in alt_bases.items()]
+    #     max_cnt, max_base = max(inverse)
+    #     return (max_cnt, max_base)
 
     p1 = subprocess.Popen(['samtools','mpileup', '-f', ref_fa, '-ax', bam_file],
                        stdout = subprocess.PIPE)
     out = p1.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
     #return out
-    out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
-                            'REF_BASE': [i[2] for i in out],
-                            'DEPTH':  [int(i[3]) if int(i[3]) > 0 else  0.9 for i in out],
-                            'MISMATCHES':  [count_mismtaches2(readbase_parser(i[4])) for i in out]
+    out_tbl = pd.DataFrame({'POS': [int(row[1]) for row in out],
+                            'REF_BASE': [row[2] for row in out],
+                            'DEPTH':  [int(row[3]) if int(row[3]) > 0 else  0.9 for row in out],
+                            'READ_BASE':  [row[4] for row in out],
+                            'MISMATCHES': [readbase_parser(row) for row in out]
                            })
+
+    # for i, row in out_tbl.iterrows():
+    #     max_mistmatch, max_indel = readbase_parser(row.READ_BASE)
+    #
+    #     if max_mistmatch:
+    #         if max_mistmatch[0] > row.DEPTH *
 
     return out_tbl
 
 # Adding lines for mismatches in plot
 # Detecting mismatches contained in primer region
-def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
+def add_mismatch(tbl,
+                 ax,
+                 threashold = 0.8,
+                 primer_bed=None,
+                 seq_name=None,
+                 refseq_vector=None):
 
-    MIN_NUM_MISMATH = 2
+    # MIN_NUM_MISMATH = 2
 
     if primer_bed:
         df = pd.read_csv(primer_bed, sep='\t', header = None)
@@ -191,14 +252,12 @@ def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
     xy = []
     count = 0
     for index, row in tbl.iterrows():
-        mismatch_cnt = row['MISMATCHES'][0]
-        mismatch_base = row['MISMATCHES'][1]
-        if mismatch_cnt < MIN_NUM_MISMATH:
-            continue
-        if mismatch_cnt > row['DEPTH'] * threashold:
-            x = row['POS']
-            y = mismatch_cnt
-            ref_base = row['REF_BASE']
+        mismatch_obj = row['MISMATCHES'][0]
+        indel_obj = row['MISMATCHES'][1]
+
+        if mismatch_obj:
+            x = mismatch_obj.pos
+            y = mismatch_obj.count
             col = color_scheme['mismatch_normal']
             if primer_bed and is_contained(x, df):
                 col = color_scheme['mismatch_primer']
@@ -209,11 +268,63 @@ def add_mismatch(tbl, ax, threashold = 0.8, primer_bed=None):
             # Adding a label for the mismatch base and position
             ax.text(x=x,
                     y=np.sqrt(y) / ((count % 2) + 1),
-                    s=f'{ref_base}{x}{mismatch_base}',
+                    s=mismatch_obj.show_mismatch,
                     fontsize=2,
                     zorder=120,
                     color='#363636')
             count += 1
+
+        if indel_obj:
+            x = indel_obj.pos
+            y = indel_obj.count
+            col = 'blue'
+            if primer_bed and is_contained(x, df):
+                col = color_scheme['mismatch_primer']
+
+            r = patches.Rectangle(xy=(x, 1),
+                                  width=indel_obj.length,
+                                  height = y,
+                                  fc=col,
+                                  ec=col,
+                                  linewidth=0.5,
+                                  zorder=120)
+            ax.add_patch(r)
+            # Adding a label for the mismatch base and position
+            ax.text(x=x,
+                    y=np.sqrt(y) / ((count % 2) + 1),
+                    s=indel_obj.show_mismatch,
+                    fontsize=2,
+                    zorder=120,
+                    color='#363636')
+            count += 1
+
+    if refseq_vector:
+        MIN_DEPTH_CONSENSUS = 10
+
+        _tbl = tbl.sort_values(by='POS', ascending=False)
+        for index, row in _tbl.iterrows():
+            mismatch_obj = row['MISMATCHES'][0]
+            indel_obj = row['MISMATCHES'][1]
+
+            if row.DEPTH < MIN_DEPTH_CONSENSUS:
+                try:
+                    refseq_vector[row.POS - 1] = 'N'
+                except:
+                    pass
+
+                continue
+
+            if mismatch_obj:
+                idx = (mismatch_obj.pos - 1)
+                refseq_vector[idx] = mismatch_obj.altbase
+            if indel_obj:
+                idx = (indel_obj.pos - 1)
+                if indel_obj.type == 'del':
+                    del refseq_vector[idx:(idx + len(indel_obj.altbase))]
+                if indel_obj.type == 'ins':
+                    refseq_vector[idx:idx] = indel_obj.altbase
+
+        fasta_writer(seq_name,''.join(refseq_vector))
 
 # Adding gene boxes
 def add_genes(ax):
@@ -256,7 +367,7 @@ def add_genes(ax):
           ha='center',
           va=text_va,
           fontsize=3,
-          weight = 'bold',
+          weight='bold',
           zorder=102,
           transform=trans
           )
@@ -404,15 +515,43 @@ def set_plot_area(ax, max_hight=10000):
     # ax.set_yticks([1, 10, 100, 1000, 10000])
     # ax.set_yticklabels([str(i) for i in (1,10,100,1000,10000)], fontsize='8')
 
-def main(bam_files, outpdf, primer_bed=None, highlight_arg=None,
-         fa_file=None, num_cpu=1, mismatches_thresh=0.8, remove_softclipped=False, min_readlen=0):
+def fasta_parser(file_path):
+    seq = ''
+    with open (file_path) as f:
+        header = next(f)
+        if not header.startswith('>'):
+            exit(f'Error: {file_path} does not have a heder line')
+
+        for l in f:
+            if not l.startswith('>'):
+                seq += l.rstrip()
+            else:
+                break
+    return seq
+
+def fasta_writer(name, inseq):
+    print(f'>{name}')
+    while inseq:
+        print(inseq[0:80])
+        inseq = inseq[80:]
+
+def main(bam_files,
+         outpdf,
+         primer_bed=None,
+         highlight_arg=None,
+         fa_file=None,
+         num_cpu=1,
+         mismatches_thresh=0.8,
+         remove_softclipped=False,
+         min_readlen=0,
+         out_consensus=False):
 
     if fa_file == None:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
             executed1 = [executor.submit(samtools_depth, bam, remove_softclipped, min_readlen) for bam in bam_files]
     else:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
-            executed1 = [executor.submit(samtools_mpileup, bam, fa_file) for bam in bam_files]
+            executed1 = [executor.submit(samtools_mpileup, bam, fa_file, threashold=mismatches_thresh) for bam in bam_files]
 
     depth_tbls = [ex.result() for ex in executed1]
 
@@ -435,6 +574,9 @@ def main(bam_files, outpdf, primer_bed=None, highlight_arg=None,
                         bottom=0.5/fig_hi,
                         top=1-0.5/fig_hi)
 
+    if fa_file:
+        refseq_str = fasta_parser(fa_file)
+
     for i in range(n_sample):
         # if add_mismatches:
         #     tbl = samtools_mpileup(bam_files[i], fa_file)
@@ -444,7 +586,7 @@ def main(bam_files, outpdf, primer_bed=None, highlight_arg=None,
         align_stats = stats[i]
         meta_data = ['Total Seq: {:.1f} Mb'.format(align_stats[0]/1e6),
                      'Paired properly: {:.1%}'.format(align_stats[1])]
-        title = os.path.basename(bam_files[i])
+        title = os.path.basename(bam_files[i]).rstrip('.bam')
         ax = fig.add_subplot(n_sample, 1, i+1)
         ax.set_title(title)
         set_plot_area(ax, max_hight=10000)
@@ -473,9 +615,15 @@ def main(bam_files, outpdf, primer_bed=None, highlight_arg=None,
             add_amplicons(primer_bed, ax, highlights=highlights)
         add_genes(ax)
         if fa_file != None:
-            add_mismatch(depth_tbls[i], ax,
-                         threashold=mismatches_thresh,
-                         primer_bed=primer_bed)
+            refseq_vector = None
+            if out_consensus:
+                refseq_vector = list(refseq_str)
+
+            add_mismatch(tbl,
+                         ax,
+                         primer_bed=primer_bed,
+                         seq_name = title,
+                         refseq_vector=refseq_vector,)
 
         labels = [item.get_text() for item in ax.get_yticklabels()]
 
@@ -519,7 +667,8 @@ if __name__=='__main__':
                         help='Ignore softclipped reads (default=False). [optional]')
     parser.add_argument('--min_readlen', default=0, type=int,
                         help='Minumum length of read (default=0). [optional]')
-
+    parser.add_argument('--out_consensus', action='store_true',
+                        help='Output consensus to STDOUT. Experimental.')
 
     args = parser.parse_args()
 
@@ -542,6 +691,12 @@ if __name__=='__main__':
     if args.ref_fa and not os.path.isfile(args.ref_fa):
         sys.exit('{} was not found'.format(args.ref_fa))
 
+    if args.out_consensus:
+        print('WARNIG!!!!: Consensus generation is an experimental function.',
+                file=sys.stderr)
+        if not args.ref_fa:
+            sys.exit('--out_consensus can be used only with the -r (--ref_fa) option')
+
     main(args.bams,
          args.out,
          primer_bed=args.primer,
@@ -550,4 +705,5 @@ if __name__=='__main__':
          num_cpu=args.threads,
          mismatches_thresh=args.mismatches_thresh,
          remove_softclipped=args.ignore_softclipped,
-         min_readlen=args.min_readlen)
+         min_readlen=args.min_readlen,
+         out_consensus=args.out_consensus)
