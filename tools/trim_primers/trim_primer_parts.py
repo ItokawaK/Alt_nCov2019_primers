@@ -43,7 +43,7 @@ for sam_line in sys.stdin:
         alignment_bucket = [None, None]
         current_read = alignment.read_name
 
-    # Skip primary and supplemental alignments
+    # Skip non-primary and supplemental alignments
     if alignment.flag & (256 + 2048):
         continue
 
