@@ -99,7 +99,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 
   ```
     bwa mem nCov_bwadb untrimmed_R1.fq untrimmed_R2.fq | \
-       trim_primer_parts2.py primer.bed trimmed_R1 trimmed_R2 | \
+       trim_primer_parts2.py primer.bed | \
        bwa mem nCov_bwadb -p - | \
        samtools sort > out.bam
   ```
