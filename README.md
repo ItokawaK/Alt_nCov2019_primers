@@ -54,14 +54,16 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
     --min_readlen MIN_READLEN
                           Minumum length of read (default=0). [optional]
     --dump_consensus       Output consensus to STDOUT. Experimental.
+    
   ```
-    If `-r` option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time. Yellow and red lines indicate mismatches out of and inside of a primer target region, respecitively.
+  
+  If -r option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time. Yellow and red lines indicate mismatches out of and inside of a primer target region, respecitively.
 
-    **Important Note 1**: This program is designed to use the Wuhan-Hu-1 assembly ([MN908947.3](https://www.ncbi.nlm.nih.gov/nuccore/MN908947)) as a reference (-r, --reference). With other assemblies, this program would not work properly.  
+  **Important Note 1**: This program is designed to use the Wuhan-Hu-1 assembly ([MN908947.3](https://www.ncbi.nlm.nih.gov/nuccore/MN908947)) as a reference (-r, --reference). With other assemblies, this program would not work properly.  
 
-    **Important Note 2**: The program now output consensus sequences to STDOUT with --dump_consensus flag (used with the -r, --reference option). This function was implemented so that I can briefly check lineage of viruses by throwing the fasta file to [pangolin](https://github.com/cov-lineages/pangolin). At the moment, the resulted sequencies should not be used for more productive purposes such as depositing to GISAID. For such purposes, there are more sophisticated software, [iVar](https://github.com/andersen-lab/ivar) for instance, to obtain consensuses.
+  **Important Note 2**: The program now output consensus sequences to STDOUT with --dump_consensus flag (used with the -r, --reference option). This function was implemented so that I can briefly check lineage of viruses by throwing the fasta file to [pangolin](https://github.com/cov-lineages/pangolin). At the moment, the resulted sequencies should not be used for more productive purposes such as depositing to GISAID. For such purposes, there are more sophisticated software, [iVar](https://github.com/andersen-lab/ivar) for instance, to obtain consensuses.
 
-    Output image
+  Output image
 
 ![plot_depth_out_image_2](https://user-images.githubusercontent.com/38896687/104012314-ec1a1580-51f2-11eb-97f1-a5c4b21a19c7.png)
 
@@ -69,9 +71,9 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 
 ### tools/trim_primers/trim_primer_parts.py
 
-    Trim primer parts of paired-end reads obtained from illumina machines.
+  Trim primer parts of paired-end reads obtained from illumina machines.
 
-    This program works as:
+  This program works as:
 
  1. Looks alignments of mapped fragments from paired reads.
  1. Finds fragment ends *contained* in a primer region.
