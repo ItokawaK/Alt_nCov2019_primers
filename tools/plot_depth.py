@@ -30,8 +30,51 @@ color_scheme = {'plot_fc': 'gray',
                 'mismatch_primer':'red',
                 }
 
-# samtools depth analysis runner
+CDS_DATA = (
+    ("orf1a", 265,   13468), # (product, start offset, end offset)
+    ("orf1b", 13467, 21555),
+    ("S"    , 21562, 25384),
+    ("ORF3a", 25392, 26220),
+    ("E"    , 26244, 26472),
+    ("M"    , 26522, 27191),
+    ("ORF6" , 27201, 27387),
+    ("ORF7a", 27393, 27759),
+    ("ORF8" , 27893, 28259),
+    ("N"    , 28273, 29533),
+    ("ORF10", 29557, 29674)
+)
 
+
+def translate(seq):
+    TRANS_CODE = {
+        'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
+        'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
+        'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K',
+        'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R',
+        'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L',
+        'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P',
+        'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q',
+        'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R',
+        'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V',
+        'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A',
+        'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E',
+        'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
+        'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
+        'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
+        'TAC':'Y', 'TAT':'Y', 'TAA':'*', 'TAG':'*',
+        'TGC':'C', 'TGT':'C', 'TGA':'*', 'TGG':'W'
+    }
+
+    aa_seq = ''
+    if len(seq) < 3:
+        return ''
+    while len(seq) >= 3:
+        aa_seq += TRANS_CODE[seq[0:3]]
+        seq = seq[3:]
+    return aa_seq
+
+
+# samtools depth analysis runner
 def filter_softclipped(bam_file):
     p0 = subprocess.Popen(['samtools','view','-h', bam_file],
                           stdout = subprocess.PIPE)
@@ -80,6 +123,10 @@ def samtools_stats(bam_file):
     return((total_l, per_paired))
 
 class Mismatch:
+
+    cds = CDS_DATA
+    refseq_str = None
+
     def __init__(self, pos, refbase, altbase, count, type):
         self.pos = pos
         self.refbase = refbase
@@ -108,6 +155,87 @@ class Mismatch:
     @property
     def length(self):
         return len(self.altbase)
+
+    @property
+    def annotation(self):
+
+        gene = None
+        aa_pos = None
+
+        offset_v = self.pos - 1
+        if self.type == 'snp':
+            for g, s, e in __class__.cds:
+                if s <= self.pos < e:
+                    gene = g
+                    gene_seq = __class__.refseq_str[s:e]
+                    q, mod = divmod(offset_v - s, 3)
+                    aa_pos = q + 1
+                    codon_offset = s + q*3
+                    triplet = list(gene_seq[(q*3):(q*3 + 3)])
+                    ref_codon = ''.join(triplet)
+                    ref_aa = translate(ref_codon)
+                    triplet[mod] = self.altbase
+                    sample_codon = ''.join(triplet)
+                    sample_aa = translate(sample_codon)
+                    if ref_aa != sample_aa:
+                        return f'{gene}:{ref_aa}{aa_pos}{sample_aa}'
+
+        if self.type == 'del':
+            for g, s, e in __class__.cds:
+                if s <= self.pos < e:
+                    gene = g
+                    gene_seq = __class__.refseq_str[s:e]
+                    q1, mod1 = divmod(offset_v - s, 3)
+                    aa_pos = q1 + 1
+                    q2, mod2 = divmod(offset_v + self.length - s, 3)
+                    if mod2 == 0:
+                        add = 0
+                    else:
+                        add = 3
+                    triplets = list(gene_seq[(q1*3):(q2*3 + add)])
+                    ref_codon = ''.join(triplets)
+                    deleted_aa =  translate(ref_codon)
+                    if (self.length % 3) != 0:
+                        return 'FrameShifting'
+                    else:
+                        l_remained = triplets[:mod1]
+                        if mod2 == 0:
+                            r_remained = ['']
+                        else:
+                            r_remained = triplets[-(3-mod2):]
+
+                        remained = ''.join(l_remained + r_remained)
+
+                        remained_aa = translate(remained)
+
+
+                    return f'{gene}:{deleted_aa}{aa_pos}{remained_aa}'
+
+        if self.type == 'ins':
+            for g, s, e in __class__.cds:
+                if s <= self.pos < e:
+                    gene = g
+                    gene_seq = __class__.refseq_str[s:e]
+                    q, mod = divmod(offset_v - s, 3)
+                    aa_pos = q + 1
+                    if (self.length % 3) != 0:
+                        return 'FrameShifting'
+
+                    if mod == 0:
+                        ref_aa = ''
+                        sample_aa = translate(self.altbase)
+                        aa_pos = f'{aa_pos}^{aa_pos+1}'
+                    else:
+                        triplet = list(gene_seq[(q*3):(q*3 + 3)])
+                        ref_codon = ''.join(triplet)
+                        ref_aa = translate(ref_codon)
+                        triplet[mod:mod] = list(self.altbase)
+                        sample_codon = ''.join(triplet)
+                        sample_aa =  translate(sample_codon)
+
+                    return f'{gene}:{ref_aa}{aa_pos}{sample_aa}'
+
+        return None
 
 # samtools mpileup runner
 def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
@@ -175,35 +303,8 @@ def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
                 indel_type, indel_seq = indel_str.split("_")
                 out_indel = Mismatch(pos+1, refbase, indel_seq, indel_cnt, indel_type)
 
-        #
-        # else:
-        #     out_indel = None
-
         return (out_mismatch, out_indel)
 
-    # def count_mismtaches(read_bases):
-    #     cnt = 0
-    #     for base in read_bases:
-    #         if base in 'ATGCatgc':
-    #             cnt += 1
-    #     return cnt
-    #
-    # def count_mismtaches2(read_bases):
-    #     alt_bases = {'A':0, 'T':0, 'G':0, 'C':0}
-    #     indels = defaultdict(int)
-    #     for base in read_bases:
-    #         if base in 'Aa':
-    #             alt_bases['A'] += 1
-    #         elif base in 'Tt':
-    #             alt_bases['T'] += 1
-    #         elif base in 'Gg':
-    #             alt_bases['G'] += 1
-    #         elif base in 'Cc':
-    #             alt_bases['C'] += 1
-    #
-    #     inverse = [(cnt, base) for base, cnt in alt_bases.items()]
-    #     max_cnt, max_base = max(inverse)
-    #     return (max_cnt, max_base)
 
     p1 = subprocess.Popen(['samtools','mpileup', '-f', ref_fa, '-ax', bam_file],
                        stdout = subprocess.PIPE)
@@ -216,12 +317,6 @@ def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
                             'READ_BASE':  [row[4] for row in out],
                             'MISMATCHES': [readbase_parser(row) for row in out]
                            })
-
-    # for i, row in out_tbl.iterrows():
-    #     max_mistmatch, max_indel = readbase_parser(row.READ_BASE)
-    #
-    #     if max_mistmatch:
-    #         if max_mistmatch[0] > row.DEPTH *
 
     return out_tbl
 
@@ -251,6 +346,7 @@ def add_mismatch(tbl,
 
     xy = []
     count = 0
+    labe_y_bin = 10
     for index, row in tbl.iterrows():
         mismatch_obj = row['MISMATCHES'][0]
         indel_obj = row['MISMATCHES'][1]
@@ -258,6 +354,11 @@ def add_mismatch(tbl,
         if mismatch_obj:
             x = mismatch_obj.pos
             y = mismatch_obj.count
+            mismatch_str = mismatch_obj.show_mismatch
+            ano = mismatch_obj.annotation
+            if ano:
+                mismatch_str += f'({ano})'
+
             col = color_scheme['mismatch_normal']
             if primer_bed and is_contained(x, df):
                 col = color_scheme['mismatch_primer']
@@ -266,17 +367,24 @@ def add_mismatch(tbl,
                     linewidth=0.5,
                     zorder= 120)
             # Adding a label for the mismatch base and position
+            mismatch_label_y = 10**((np.log10(y)/labe_y_bin) * (count % labe_y_bin + 1))
             ax.text(x=x,
-                    y=np.sqrt(y) / ((count % 2) + 1),
-                    s=mismatch_obj.show_mismatch,
+                    y=mismatch_label_y,
+                    s=mismatch_str,
                     fontsize=2,
                     zorder=120,
-                    color='#363636')
+                    alpha=0.8,
+                    color='0')
             count += 1
 
         if indel_obj:
             x = indel_obj.pos
             y = indel_obj.count
+            mismatch_str = indel_obj.show_mismatch
+            ano = indel_obj.annotation
+            if ano:
+                mismatch_str += f'({ano})'
+
             col = 'blue'
             if primer_bed and is_contained(x, df):
                 col = color_scheme['mismatch_primer']
@@ -286,20 +394,25 @@ def add_mismatch(tbl,
                                   height = y,
                                   fc=col,
                                   ec=col,
-                                  linewidth=0.5,
+                                  linewidth=0.8,
                                   zorder=120)
             ax.add_patch(r)
+
             # Adding a label for the mismatch base and position
+            mismatch_label_y = 10**((np.log10(y)/labe_y_bin) * (count % labe_y_bin + 1))
             ax.text(x=x,
-                    y=np.sqrt(y) / ((count % 2) + 1),
-                    s=indel_obj.show_mismatch,
+                    y=mismatch_label_y,
+                    s=mismatch_str,
                     fontsize=2,
                     zorder=120,
-                    color='#363636')
+                    alpha=0.7,
+                    color='0')
             count += 1
 
-    if refseq_vector:
+def mutate_genome(seq_name, refseq, tbl):
         MIN_DEPTH_CONSENSUS = 10
+
+        refseq_vector = list(refseq)
 
         _tbl = tbl.sort_values(by='POS', ascending=False)
         for index, row in _tbl.iterrows():
@@ -325,6 +438,8 @@ def add_mismatch(tbl,
                     refseq_vector[idx:idx] = indel_obj.altbase
 
         fasta_writer(seq_name,''.join(refseq_vector))
+        # return ''.join(refseq_vector)
+
 
 # Adding gene boxes
 def add_genes(ax):
@@ -576,6 +691,7 @@ def main(bam_files,
 
     if fa_file:
         refseq_str = fasta_parser(fa_file)
+        Mismatch.refseq_str = refseq_str
 
     for i in range(n_sample):
         # if add_mismatches:
@@ -615,15 +731,14 @@ def main(bam_files,
             add_amplicons(primer_bed, ax, highlights=highlights)
         add_genes(ax)
         if fa_file != None:
-            refseq_vector = None
+            # refseq_vector = None
             if out_consensus:
-                refseq_vector = list(refseq_str)
+                # refseq_vector = list(refseq_str)
+                mutate_genome(seq_name=title, refseq=refseq_str, tbl=tbl)
 
             add_mismatch(tbl,
                          ax,
-                         primer_bed=primer_bed,
-                         seq_name = title,
-                         refseq_vector=refseq_vector,)
+                         primer_bed=primer_bed)
 
         labels = [item.get_text() for item in ax.get_yticklabels()]
 
@@ -634,7 +749,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.9
+    _version = 0.10
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
@@ -667,7 +782,7 @@ if __name__=='__main__':
                         help='Ignore softclipped reads (default=False). [optional]')
     parser.add_argument('--min_readlen', default=0, type=int,
                         help='Minumum length of read (default=0). [optional]')
-    parser.add_argument('--out_consensus', action='store_true',
+    parser.add_argument('--dump_consensus', action='store_true',
                         help='Output consensus to STDOUT. Experimental.')
 
     args = parser.parse_args()
@@ -691,11 +806,14 @@ if __name__=='__main__':
     if args.ref_fa and not os.path.isfile(args.ref_fa):
         sys.exit('{} was not found'.format(args.ref_fa))
 
-    if args.out_consensus:
-        print('WARNIG!!!!: Consensus generation is an experimental function.',
-                file=sys.stderr)
+    if args.dump_consensus:
+        warinig_msg = ' '*20
+        warinig_msg += 'WARNIG!!!!: Consensus generation is an experimental function.'
+        print('', file=sys.stderr)
+        print(warinig_msg, file=sys.stderr)
+        print('',file=sys.stderr)
         if not args.ref_fa:
-            sys.exit('--out_consensus can be used only with the -r (--ref_fa) option')
+            sys.exit('--dump_consensus can be used only with the -r (--ref_fa) option')
 
     main(args.bams,
          args.out,
@@ -706,4 +824,4 @@ if __name__=='__main__':
          mismatches_thresh=args.mismatches_thresh,
          remove_softclipped=args.ignore_softclipped,
          min_readlen=args.min_readlen,
-         out_consensus=args.out_consensus)
+         out_consensus=args.dump_consensus)
