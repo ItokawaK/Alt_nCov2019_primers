@@ -63,7 +63,9 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 
     Output image
 
-![plot_depth_out_image_2](https://user-images.githubusercontent.com/38896687/78553244-e8142e00-7843-11ea-8c40-e27a0f2066a6.png)
+![plot_depth_out_image_2](https://user-images.githubusercontent.com/38896687/104012314-ec1a1580-51f2-11eb-97f1-a5c4b21a19c7.png)
+
+
 
 ### tools/trim_primers/trim_primer_parts.py
 
