@@ -53,8 +53,11 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
                           Ignore softclipped reads (default=False). [optional]
     --min_readlen MIN_READLEN
                           Minumum length of read (default=0). [optional]
+    --skip_level SKIP_LEVEL
+                          Plot depths at every n (1-50) bases. (default=10). Setting this a larger value makes file size smaller with reduced      
+                          resolution [optional]
     --dump_consensus       Output consensus to STDOUT. Experimental.
-    
+
   ```
   
   If -r option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time. Yellow and red lines indicate mismatches out of and inside of a primer target region, respecitively.
