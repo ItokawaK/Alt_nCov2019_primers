@@ -19,6 +19,7 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 import signal
 import matplotlib.transforms as transforms
+from matplotlib.backends.backend_pdf import PdfPages
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -656,6 +657,7 @@ def main(bam_files,
          highlight_arg=None,
          fa_file=None,
          num_cpu=1,
+         plot_reduction_level=10,
          mismatches_thresh=0.8,
          remove_softclipped=False,
          min_readlen=0,
@@ -682,67 +684,79 @@ def main(bam_files,
 
     n_sample = len(bam_files)
 
-    fig_hi = 3 * n_sample
-    fig = plt.figure(figsize=(8, fig_hi))
-    plt.subplots_adjust(right=0.85,
-                        hspace=0.5,
-                        bottom=0.5/fig_hi,
-                        top=1-0.5/fig_hi)
+    with PdfPages(outpdf) as pdf:
+        if fa_file:
+            refseq_str = fasta_parser(fa_file)
+            Mismatch.refseq_str = refseq_str
 
-    if fa_file:
-        refseq_str = fasta_parser(fa_file)
-        Mismatch.refseq_str = refseq_str
+        for i in range(n_sample):
+            # if add_mismatches:
+            #     tbl = samtools_mpileup(bam_files[i], fa_file)
+            # else:
+            #     tbl = samtools_depth(bam_files[i])
 
-    for i in range(n_sample):
-        # if add_mismatches:
-        #     tbl = samtools_mpileup(bam_files[i], fa_file)
-        # else:
-        #     tbl = samtools_depth(bam_files[i])
+            # fig_hi = 3
+            fig, ax = plt.subplots(1,1, figsize=(8, 3))
+            plt.subplots_adjust(right=0.85,
+                                hspace=0.5,
+                                bottom=0.5/3,
+                                top=1-0.5/3)
 
-        align_stats = stats[i]
-        meta_data = ['Total Seq: {:.1f} Mb'.format(align_stats[0]/1e6),
-                     'Paired properly: {:.1%}'.format(align_stats[1])]
-        title = os.path.basename(bam_files[i]).rstrip('.bam')
-        ax = fig.add_subplot(n_sample, 1, i+1)
-        ax.set_title(title)
-        set_plot_area(ax, max_hight=10000)
-        tbl = depth_tbls[i]
+            align_stats = stats[i]
+            meta_data = ['Total Seq: {:.1f} Mb'.format(align_stats[0]/1e6),
+                         'Paired properly: {:.1%}'.format(align_stats[1])]
+            title = os.path.basename(bam_files[i]).rstrip('.bam')
+            ax.set_title(title)
+            set_plot_area(ax, max_hight=10000)
+            tbl = depth_tbls[i]
 
-        ax.fill([np.min(tbl['POS'])] + list(tbl['POS']) + [np.max(tbl['POS'])],
-                [0.9] + list(tbl['DEPTH']) + [0.9],
-                color_scheme['plot_fc'],
-                zorder=52)
+            x = list(tbl['POS'])
+            y = list(tbl['DEPTH'])
 
-        # Horizontal line at 10
-        ax.axhline(10,
-               color='k',
-               linestyle=':',
-               linewidth=0.8,
-               zorder=103)
+            # Data reduction
+            x = [_x for i, _x in enumerate(x) if i % plot_reduction_level == 0]
+            y = [_y for i, _y in enumerate(y) if i % plot_reduction_level == 0]
 
-        # Adding supportive data
-        ax.text(1.01, 0.7,
-                '\n'.join(meta_data),
-                fontsize=5,
-                ha='left',
-                transform=ax.transAxes)
+            x = [np.min(x)] + x + [np.max(x)]
+            y = [0.9] + y + [0.9]
 
-        if primer_bed != None:
-            add_amplicons(primer_bed, ax, highlights=highlights)
-        add_genes(ax)
-        if fa_file != None:
-            # refseq_vector = None
-            if out_consensus:
-                # refseq_vector = list(refseq_str)
-                mutate_genome(seq_name=title, refseq=refseq_str, tbl=tbl)
+            ax.fill(x,
+                    y,
+                    color_scheme['plot_fc'],
+                    zorder=52)
 
-            add_mismatch(tbl,
-                         ax,
-                         primer_bed=primer_bed)
+            # Horizontal line at 10
+            ax.axhline(10,
+                   color='k',
+                   linestyle=':',
+                   linewidth=0.8,
+                   zorder=103)
 
-        labels = [item.get_text() for item in ax.get_yticklabels()]
+            # Adding supportive data
+            ax.text(1.01, 0.7,
+                    '\n'.join(meta_data),
+                    fontsize=5,
+                    ha='left',
+                    transform=ax.transAxes)
 
-    plt.savefig(outpdf, format='pdf')
+            if primer_bed != None:
+                add_amplicons(primer_bed, ax, highlights=highlights)
+            add_genes(ax)
+            if fa_file != None:
+                # refseq_vector = None
+                if out_consensus:
+                    # refseq_vector = list(refseq_str)
+                    mutate_genome(seq_name=title, refseq=refseq_str, tbl=tbl)
+
+                add_mismatch(tbl,
+                             ax,
+                             primer_bed=primer_bed)
+
+            labels = [item.get_text() for item in ax.get_yticklabels()]
+
+            # plt.savefig(outpdf, format='pdf')
+            pdf.savefig()
+            plt.close()
 
 if __name__=='__main__':
     import argparse
@@ -782,6 +796,10 @@ if __name__=='__main__':
                         help='Ignore softclipped reads (default=False). [optional]')
     parser.add_argument('--min_readlen', default=0, type=int,
                         help='Minumum length of read (default=0). [optional]')
+    parser.add_argument('--skip_level', default=10, type=int,
+                        help='Plot depths at every n (1-50) bases. (default=10). '
+                             'Setting this a larger value makes file size smaller '
+                             'with reduced resolution [optional]')
     parser.add_argument('--dump_consensus', action='store_true',
                         help='Output consensus to STDOUT. Experimental.')
 
@@ -806,6 +824,9 @@ if __name__=='__main__':
     if args.ref_fa and not os.path.isfile(args.ref_fa):
         sys.exit('{} was not found'.format(args.ref_fa))
 
+    if args.skip_level < 1 or args.skip_level > 50:
+        sys.exit('skip_level should be between 1 and 50')
+
     if args.dump_consensus:
         warinig_msg = ' '*20
         warinig_msg += 'WARNIG!!!!: Consensus generation is an experimental function.'
@@ -824,4 +845,5 @@ if __name__=='__main__':
          mismatches_thresh=args.mismatches_thresh,
          remove_softclipped=args.ignore_softclipped,
          min_readlen=args.min_readlen,
+         plot_reduction_level=args.skip_level,
          out_consensus=args.dump_consensus)
