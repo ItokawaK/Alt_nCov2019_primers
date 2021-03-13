@@ -307,7 +307,7 @@ def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
         return (out_mismatch, out_indel)
 
 
-    p1 = subprocess.Popen(['samtools','mpileup', '-f', ref_fa, '-ax', bam_file],
+    p1 = subprocess.Popen(['samtools','mpileup', '-B', '-f', ref_fa, '-ax', bam_file],
                        stdout = subprocess.PIPE)
     out = p1.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
