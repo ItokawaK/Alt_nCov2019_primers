@@ -7,10 +7,12 @@ See below article for detail of the modifications:
 
 Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer interactions improves SARS-CoV-2 genome sequencing by multiplex tiling PCR. PLoS ONE 15(9): [e0239403](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403).
 
-### Primer version (updated on 2020/5/18)
+### Primer version
 - Primers/ver_niid-200325/: Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
 - Primers/ver_niid-200407/: Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
 - Primers/ver_N1/: Including the 12 primer exchanges as described in the [preprint ver.4](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf) and [peer-reviewed paper in PLOS ONE](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403)
+- Primers/ver_N2/: Added a new primer "nCoV-2019_72_RIGHT_C22A" in Pool2 to follow up the mismatch due to G22017T mutation in R.1 lineage. (Mar 03 2021)
+
 
 
 ## Tools
@@ -59,7 +61,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
     --dump_consensus       Output consensus to STDOUT. Experimental.
 
   ```
-  
+
   If -r option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time. Yellow and red lines indicate mismatches out of and inside of a primer target region, respecitively.
 
   **Important Note 1**: This program is designed to use the Wuhan-Hu-1 assembly ([MN908947.3](https://www.ncbi.nlm.nih.gov/nuccore/MN908947)) as a reference (-r, --reference). With other assemblies, this program would not work properly.  
