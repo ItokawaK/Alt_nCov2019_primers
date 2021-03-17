@@ -11,7 +11,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 - Primers/ver_niid-200325/: Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
 - Primers/ver_niid-200407/: Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
 - Primers/ver_N1/: Including the 12 primer exchanges as described in the [preprint ver.4](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf) and [peer-reviewed paper in PLOS ONE](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403)
-- Primers/ver_N2/: Added a new primer "nCoV-2019_72_RIGHT_C22A" in Pool2 to follow up the mismatch due to G22017T mutation in R.1 lineage. (Mar 03 2021)
+- Primers/ver_N2/: Added a new primer "nCoV-2019_72_RIGHT_C22A" in Pool2 to prevent dropout of amplicon 72 in R.1 lineage due to mismatch by G22017T mutation . (Mar 13 2021)
 
 
 
