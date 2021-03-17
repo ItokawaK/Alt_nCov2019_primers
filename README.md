@@ -7,7 +7,7 @@ See below article for detail of the modifications:
 
 Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer interactions improves SARS-CoV-2 genome sequencing by multiplex tiling PCR. PLoS ONE 15(9): [e0239403](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403).
 
-### Primer version
+### Primer versions
 - [Primers/ver_niid-200325/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_niid-200325): Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
 - [Primers/ver_niid-200407/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_niid-200407): Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
 - [Primers/ver_N1/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N1): Including the 12 primer exchanges as described in the [preprint ver.4](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf) and [peer-reviewed paper in PLOS ONE](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403)
