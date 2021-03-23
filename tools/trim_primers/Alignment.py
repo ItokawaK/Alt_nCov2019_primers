@@ -40,9 +40,13 @@ class Alignment():
         for cigletter in self.cigar_expand:
             if cigletter in "S":
                 self.read2refcorr.append("S")
-            if cigletter in 'MDN=X':
+            if cigletter in 'MN=X':
                 self.read2refcorr.append(self.ref_start + walk)
                 walk += 1
+            if cigletter in 'D':
+                walk += 1
+            if cigletter in 'I':
+                self.read2refcorr.append(self.ref_start + walk)
 
         self.ref_end = self.ref_start + walk
 
