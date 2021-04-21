@@ -98,9 +98,13 @@ def samtools_depth(bam_file, remove_softclipped=False, min_readlen=0):
 
     out = p2.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
-    out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
-                            'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  0.9 for i in out]
-                           })
+    try:
+        out_tbl = pd.DataFrame({'POS': [int(i[1]) for i in out],
+                                'DEPTH':  [int(i[2]) if int(i[2]) > 0 else  0.9 for i in out]
+                               })
+    except:
+        print(f'No mapped read in {bam_file}', file=sys.stderr)
+        return None
 
     return out_tbl
 
@@ -311,13 +315,22 @@ def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
                        stdout = subprocess.PIPE)
     out = p1.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
+
+    # Return none if there is no output from mpileup
+    if not out:
+        print(f'No mapped read in {bam_file}', file=sys.stderr)
+        return None
     #return out
-    out_tbl = pd.DataFrame({'POS': [int(row[1]) for row in out],
-                            'REF_BASE': [row[2] for row in out],
-                            'DEPTH':  [int(row[3]) if int(row[3]) > 0 else  0.9 for row in out],
-                            'READ_BASE':  [row[4] for row in out],
-                            'MISMATCHES': [readbase_parser(row) for row in out]
-                           })
+    try:
+        out_tbl = pd.DataFrame({'POS': [int(row[1]) for row in out],
+                                'REF_BASE': [row[2] for row in out],
+                                'DEPTH':  [int(row[3]) if int(row[3]) > 0 else  0.9 for row in out],
+                                'READ_BASE':  [row[4] for row in out],
+                                'MISMATCHES': [readbase_parser(row) for row in out]
+                               })
+    except:
+        print(f'No mapped read in {bam_file}', file=sys.stderr)
+        return None
 
     return out_tbl
 
@@ -325,7 +338,7 @@ def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
 # Detecting mismatches contained in primer region
 def add_mismatch(tbl,
                  ax,
-                 threashold = 0.8,
+                 threashold=0.8,
                  primer_bed=None,
                  seq_name=None,
                  refseq_vector=None):
@@ -410,8 +423,8 @@ def add_mismatch(tbl,
                     color='0')
             count += 1
 
-def mutate_genome(seq_name, refseq, tbl):
-        MIN_DEPTH_CONSENSUS = 10
+def mutate_genome(seq_name, refseq, tbl, min_depth=10):
+        MIN_DEPTH_CONSENSUS = min_depth
 
         refseq_vector = list(refseq)
 
@@ -659,6 +672,7 @@ def main(bam_files,
          num_cpu=1,
          plot_reduction_level=10,
          mismatches_thresh=0.8,
+         min_concensus_depth=10,
          remove_softclipped=False,
          min_readlen=0,
          out_consensus=False):
@@ -690,12 +704,10 @@ def main(bam_files,
             Mismatch.refseq_str = refseq_str
 
         for i in range(n_sample):
-            # if add_mismatches:
-            #     tbl = samtools_mpileup(bam_files[i], fa_file)
-            # else:
-            #     tbl = samtools_depth(bam_files[i])
+            progress_bar = f' [{i+1}/{n_sample}] samples were plotted.'
+            sys.stderr.write(f'\r{progress_bar}')
+            sys.stderr.flush()
 
-            # fig_hi = 3
             fig, ax = plt.subplots(1,1, figsize=(8, 3))
             plt.subplots_adjust(right=0.85,
                                 hspace=0.5,
@@ -709,6 +721,11 @@ def main(bam_files,
             ax.set_title(title)
             set_plot_area(ax, max_hight=10000)
             tbl = depth_tbls[i]
+
+            if tbl is None:
+                pdf.savefig()
+                plt.close()
+                continue
 
             x = list(tbl['POS'])
             y = list(tbl['DEPTH'])
@@ -746,7 +763,10 @@ def main(bam_files,
                 # refseq_vector = None
                 if out_consensus:
                     # refseq_vector = list(refseq_str)
-                    mutate_genome(seq_name=title, refseq=refseq_str, tbl=tbl)
+                    mutate_genome(seq_name=title,
+                                  refseq=refseq_str,
+                                  tbl=tbl,
+                                  min_depth=min_concensus_depth)
 
                 add_mismatch(tbl,
                              ax,
@@ -757,6 +777,8 @@ def main(bam_files,
             # plt.savefig(outpdf, format='pdf')
             pdf.savefig()
             plt.close()
+
+        sys.stderr.write('\n')
 
 if __name__=='__main__':
     import argparse
@@ -802,6 +824,8 @@ if __name__=='__main__':
                              'with reduced resolution [optional]')
     parser.add_argument('--dump_consensus', action='store_true',
                         help='Output consensus to STDOUT. Experimental.')
+    parser.add_argument('--min_concensus_depth', default=10, type=int,
+                        help='Min depth to show consensus (default=10).')
 
     args = parser.parse_args()
 
@@ -843,6 +867,7 @@ if __name__=='__main__':
          fa_file=args.ref_fa,
          num_cpu=args.threads,
          mismatches_thresh=args.mismatches_thresh,
+         min_concensus_depth=args.min_concensus_depth,
          remove_softclipped=args.ignore_softclipped,
          min_readlen=args.min_readlen,
          plot_reduction_level=args.skip_level,
