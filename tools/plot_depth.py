@@ -341,7 +341,8 @@ def add_mismatch(tbl,
                  threashold=0.8,
                  primer_bed=None,
                  seq_name=None,
-                 refseq_vector=None):
+                 refseq_vector=None,
+                 only_primer_mismatch=False):
 
     # MIN_NUM_MISMATH = 2
 
@@ -374,22 +375,28 @@ def add_mismatch(tbl,
                 mismatch_str += f'({ano})'
 
             col = color_scheme['mismatch_normal']
+            mismatch_on_primer = False
             if primer_bed and is_contained(x, df):
                 col = color_scheme['mismatch_primer']
-            ax.plot([x,x],[1,y],
-                    color = col,
-                    linewidth=0.5,
-                    zorder= 120)
-            # Adding a label for the mismatch base and position
-            mismatch_label_y = 10**((np.log10(y)/labe_y_bin) * (count % labe_y_bin + 1))
-            ax.text(x=x,
-                    y=mismatch_label_y,
-                    s=mismatch_str,
-                    fontsize=2,
-                    zorder=120,
-                    alpha=0.8,
-                    color='0')
-            count += 1
+                mismatch_on_primer = True
+
+            if only_primer_mismatch and not mismatch_on_primer:
+                pass
+            else:
+                ax.plot([x,x],[1,y],
+                        color = col,
+                        linewidth=0.5,
+                        zorder= 120)
+                # Adding a label for the mismatch base and position
+                mismatch_label_y = 10**((np.log10(y)/labe_y_bin) * (count % labe_y_bin + 1))
+                ax.text(x=x,
+                        y=mismatch_label_y,
+                        s=mismatch_str,
+                        fontsize=2,
+                        zorder=120,
+                        alpha=0.8,
+                        color='0')
+                count += 1
 
         if indel_obj:
             x = indel_obj.pos
@@ -400,28 +407,33 @@ def add_mismatch(tbl,
                 mismatch_str += f'({ano})'
 
             col = 'blue'
+            mismatch_on_primer = False
             if primer_bed and is_contained(x, df):
                 col = color_scheme['mismatch_primer']
+                mismatch_on_primer = True
 
-            r = patches.Rectangle(xy=(x, 1),
-                                  width=indel_obj.length,
-                                  height = y,
-                                  fc=col,
-                                  ec=col,
-                                  linewidth=0.8,
-                                  zorder=120)
-            ax.add_patch(r)
+            if only_primer_mismatch and not mismatch_on_primer:
+                pass
+            else:
+                r = patches.Rectangle(xy=(x, 1),
+                                      width=indel_obj.length,
+                                      height = y,
+                                      fc=col,
+                                      ec=col,
+                                      linewidth=0.8,
+                                      zorder=120)
+                ax.add_patch(r)
 
-            # Adding a label for the mismatch base and position
-            mismatch_label_y = 10**((np.log10(y)/labe_y_bin) * (count % labe_y_bin + 1))
-            ax.text(x=x,
-                    y=mismatch_label_y,
-                    s=mismatch_str,
-                    fontsize=2,
-                    zorder=120,
-                    alpha=0.7,
-                    color='0')
-            count += 1
+                # Adding a label for the mismatch base and position
+                mismatch_label_y = 10**((np.log10(y)/labe_y_bin) * (count % labe_y_bin + 1))
+                ax.text(x=x,
+                        y=mismatch_label_y,
+                        s=mismatch_str,
+                        fontsize=2,
+                        zorder=120,
+                        alpha=0.7,
+                        color='0')
+                count += 1
 
 def mutate_genome(seq_name, refseq, tbl, min_depth=10):
         MIN_DEPTH_CONSENSUS = min_depth
@@ -675,7 +687,8 @@ def main(bam_files,
          min_concensus_depth=10,
          remove_softclipped=False,
          min_readlen=0,
-         out_consensus=False):
+         out_consensus=False,
+         only_primer_mismatch=False):
 
     if fa_file == None:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
@@ -770,7 +783,8 @@ def main(bam_files,
 
                 add_mismatch(tbl,
                              ax,
-                             primer_bed=primer_bed)
+                             primer_bed=primer_bed,
+                             only_primer_mismatch=only_primer_mismatch)
 
             labels = [item.get_text() for item in ax.get_yticklabels()]
 
@@ -785,7 +799,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.10
+    _version = 0.11
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
@@ -826,6 +840,8 @@ if __name__=='__main__':
                         help='Output consensus to STDOUT. Experimental.')
     parser.add_argument('--min_concensus_depth', default=10, type=int,
                         help='Min depth to show consensus (default=10).')
+    parser.add_argument('--only_primer_mismatch', action='store_true',
+                        help='Show only primer mismatch')
 
     args = parser.parse_args()
 
@@ -871,4 +887,5 @@ if __name__=='__main__':
          remove_softclipped=args.ignore_softclipped,
          min_readlen=args.min_readlen,
          plot_reduction_level=args.skip_level,
-         out_consensus=args.dump_consensus)
+         out_consensus=args.dump_consensus,
+         only_primer_mismatch=args.only_primer_mismatch)
