@@ -170,7 +170,7 @@ class Mismatch:
         offset_v = self.pos - 1
         if self.type == 'snp':
             for g, s, e in __class__.cds:
-                if s <= self.pos < e:
+                if s < self.pos < e:
                     gene = g
                     gene_seq = __class__.refseq_str[s:e]
                     q, mod = divmod(offset_v - s, 3)
@@ -187,7 +187,7 @@ class Mismatch:
 
         if self.type == 'del':
             for g, s, e in __class__.cds:
-                if s <= self.pos < e:
+                if s < self.pos < e:
                     gene = g
                     gene_seq = __class__.refseq_str[s:e]
                     q1, mod1 = divmod(offset_v - s, 3)
@@ -799,7 +799,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.11
+    _version = 0.12
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
