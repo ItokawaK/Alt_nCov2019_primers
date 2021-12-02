@@ -14,6 +14,32 @@ class Primer_range():
                 if strand == "-":
                     self.ranges_rev.append((start, end, strand))
 
+    def primer_merge(self):
+
+        self.ranges_fwd.sort()
+        self.ranges_rev.sort()
+
+        def _merge(sorted_list, strand):
+            out_list = []
+            _start = 0
+            _end = 0
+
+            for primer in sorted_list:
+                if primer[0] > _end:
+                    if _start > 0:
+                        out_list.append((_start, _end, strand))
+                    _start = primer[0]
+                    _end = primer[1]
+                else:
+                    if primer[1] > _end:
+                        _end = primer[1]
+
+            out_list.append((_start, _end, strand))
+            return out_list
+
+        self.ranges_fwd = _merge(self.ranges_fwd, '+')
+        self.ranges_rev = _merge(self.ranges_rev, '-')
+
     def is_contained(self, end_pos, end_type):
         '''
         This function return range of primer region containing a given position.

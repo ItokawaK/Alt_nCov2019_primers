@@ -17,6 +17,7 @@ parser.add_argument('primer_bed', help='bed file describing primer coorinates')
 parser.add_argument('--r1', dest='fastq_1', help='name of output fastq file 1')
 parser.add_argument('--r2', dest='fastq_2', help='name of output fastq file 2')
 parser.add_argument('--gzip', action='store_true', help='gzip output fastq files. Adds .gz extention automatically.')
+parser.add_argument('--no_merge', action='store_true', help='Does not merge primer ranges. Not recommended.')
 parser.add_argument('--verbose', action='store_true', help='output detail infomation for debugging')
 
 
@@ -25,6 +26,8 @@ args = parser.parse_args()
 BED_FILE = args.primer_bed
 
 primer_range = Primer_range(BED_FILE)
+if not args.no_merge:
+    primer_range.primer_merge()
 
 # [+strand alignment, -strand alignment]
 alignment_bucket = [None, None]
