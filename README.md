@@ -1,9 +1,9 @@
 # Alternative primers for the ARTIC Network's nCov2019 multiplex PCR
 
 
-Here we provide some resources regarding the alternative primer sets for the [ARTIC Network's mupltiplex PCR for SARS-CoV-2](https://github.com/artic-network/artic-ncov2019). Those primer sets are results of iterative modification from the [ARTIC Network V1](https://github.com/artic-network/artic-ncov2019).
+Here we provide some resources regarding the alternative primer sets for the [ARTIC Network's mupltiplex PCR for SARS-CoV-2 genome sequencing](https://github.com/artic-network/artic-ncov2019). Those primer sets are results of iterative modification from the [ARTIC Network V1](https://github.com/artic-network/artic-ncov2019).
 
-See below article for detail of the modifications:
+See below article for detail of the modifications (for version N1):
 
 Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer interactions improves SARS-CoV-2 genome sequencing by multiplex tiling PCR. PLoS ONE 15(9): [e0239403](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403).
 
@@ -27,6 +27,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
     1. nCoV-2019_92_LEFT_b11529a (C27807T)
 
  to address dropout in the B.1.1.529 (Omicron) lineage. Also, nCoV-2019_72_RIGHT_C22A was omitted since the R.1 lineage is considered to be extinct from Japan. (Dec 6 2021)
+ 
  ![N3toN4](https://user-images.githubusercontent.com/38896687/144775717-f18bf6b0-df09-43e6-b9b3-16d76e6fa79e.PNG)
 
 
@@ -97,7 +98,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 
 ### tools/trim_primers/trim_primer_parts.py
 
- Note (Dec 2021): Newer version of samtools has [*ampliconclip* tool](https://www.htslib.org/doc/samtools-ampliconclip.html) which can soft/hard clips ends corresponding to primer intervals from alignment of paried-end reads. 
+ Note (Dec 2021): Newer version of samtools has [*ampliconclip* tool](https://www.htslib.org/doc/samtools-ampliconclip.html) which can soft/hard clips ends corresponding to primer intervals from alignment of paried-end reads.
 
   Trim primer parts of paired-end reads obtained from illumina machines.
 
