@@ -1,7 +1,7 @@
 # Alternative primers for the ARTIC Network's nCov2019 multiplex PCR
 
 
-Here we provide some resources regarding the alternative primers for the [ARTIC Network's mupltiplex PCR for SARS-CoV-2](https://github.com/artic-network/artic-ncov2019).
+Here we provide some resources regarding the alternative primer sets for the [ARTIC Network's mupltiplex PCR for SARS-CoV-2](https://github.com/artic-network/artic-ncov2019). Those primer sets are results of iterative modification from the [ARTIC Network V1](https://github.com/artic-network/artic-ncov2019).
 
 See below article for detail of the modifications:
 
@@ -11,8 +11,25 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 - [Primers/ver_niid-200325/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_niid-200325): Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3).
 - [Primers/ver_niid-200407/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_niid-200407): Including the 5 primer exchanges as described in the [preprint ver.3](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v3) + an alternative for the 13_RIGHT.
 - [Primers/ver_N1/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N1): Including the 12 primer exchanges as described in the [preprint ver.4](https://www.biorxiv.org/content/10.1101/2020.03.10.985150v4.full.pdf) and [peer-reviewed paper in PLOS ONE](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0239403)
-- [Primers/ver_N2/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N2): Added a new primer "nCoV-2019_72_RIGHT_C22A" in Pool2 to prevent dropout of amplicon 72 in R.1 lineage due to mismatch by G22017T mutation. (Mar 13 2021)
-- [Primers/ver_N3/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N3): Added a new primer "nCoV-2019_72_RIGHT_b16172a" in Pool2 to prevent dropout of amplicon 72 in B.1.617.2 lineage due to mismatch by del_22029-22034 mutation. (Jun 7 2021)
+- [Primers/ver_N2/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N2): Added a new primer
+    1. nCoV-2019_72_RIGHT_C22A
+
+  in Pool2 to prevent dropout of amplicon 72 in R.1 lineage due to mismatch by G22017T mutation. (Mar 13 2021)
+- [Primers/ver_N3/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N3): Added a new primer
+    1. "nCoV-2019_72_RIGHT_b16172a
+
+  in Pool2 to prevent dropout of amplicon 72 in B.1.617.2 lineage due to mismatch by del_22029-22034 mutation. (Jun 7 2021)
+- [Primers/ver_N4/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N4): Added five new primers
+    1. nCoV-2019_73_LEFT_b11529b (del_21987GTGTTTATT)
+    1. nCoV-2019_75_RIGHT_b11529a (T22882G, G22898A)
+    1. nCoV-2019_83_LEFT_b11529a (C25000T)
+    1. nCoV-2019_76_LEFT_b11529a (G22813T)
+    1. nCoV-2019_92_LEFT_b11529a (C27807T)
+
+ to address dropout in the B.1.1.529 (Omicron) lineage. Also, nCoV-2019_72_RIGHT_C22A was omitted since the R.1 lineage is considered to be extinct from Japan. (Dec 6 2021)
+ ![N3toN4](https://user-images.githubusercontent.com/38896687/144775717-f18bf6b0-df09-43e6-b9b3-16d76e6fa79e.PNG)
+
+
 ### Protocol for illumina platforms
 [nCoV-2019 sequencing protocol for illumina V.4](https://www.protocols.io/view/ncov-2019-sequencing-protocol-for-illumina-btjqnkmw)
 
@@ -29,37 +46,40 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
      - matplotlib
      - numpy
      - pandas
+     - pypdf2
 
   ```
   usage: plot_depth.py [-h] [-i [BAMS [BAMS ...]]] [-o OUT] [-p PRIMER] [-l HIGHLIGHTS] [-r REF_FA] [-t THREADS] [-m MISMATCHES_THRESH] [-s]
                        [--min_readlen MIN_READLEN] [--out_consensus]
 
-  Output depth plot in PDF. Ver: 0.10
+                       Output depth plot in PDF. Ver: 0.12
 
-  optional arguments:
-    -h, --help            show this help message and exit
-    -i [BAMS [BAMS ...]], --bams [BAMS [BAMS ...]]
-                          Paths for input BAMs
-    -o OUT, --out OUT     Output PDF file name
-    -p PRIMER, --primer PRIMER
-                          Primer regions in BED format [optional]
-    -l HIGHLIGHTS, --highlights HIGHLIGHTS
-                          Add highlights on selected amplicons. Give amplicon numbers delimited by comma (e.g. 18,76,...) Can only be used with the -p --primer    
-                          option. [optional]
-    -r REF_FA, --ref_fa REF_FA
-                          Reference fasta file [optional]
-    -t THREADS, --threads THREADS
-                          Num tasks to process concurrently [optional]
-    -m MISMATCHES_THRESH, --mismatches_thresh MISMATCHES_THRESH
-                          Show mismatches higher than this ratio (default=0.8). Only effective with the -r option [optional]
-    -s, --ignore_softclipped
-                          Ignore softclipped reads (default=False). [optional]
-    --min_readlen MIN_READLEN
-                          Minumum length of read (default=0). [optional]
-    --skip_level SKIP_LEVEL
-                          Plot depths at every n (1-50) bases. (default=10). Setting this a larger value makes file size smaller with reduced      
-                          resolution [optional]
-    --dump_consensus       Output consensus to STDOUT. Experimental.
+                       optional arguments:
+                         -h, --help            show this help message and exit
+                         -i [BAMS [BAMS ...]], --bams [BAMS [BAMS ...]]
+                                               Paths for input BAMs
+                         -o OUT, --out OUT     Output PDF file name
+                         -p PRIMER, --primer PRIMER
+                                               Primer regions in BED format [optional]
+                         -l HIGHLIGHTS, --highlights HIGHLIGHTS
+                                               Add highlights on selected amplicons. Give amplicon numbers delimited by comma (e.g. 18,76,...) Can only be used with the -p --primer option. [optional]      
+                         -r REF_FA, --ref_fa REF_FA
+                                               Reference fasta file [optional]
+                         -t THREADS, --threads THREADS
+                                               Num tasks to process concurrently [optional]
+                         -m MISMATCHES_THRESH, --mismatches_thresh MISMATCHES_THRESH
+                                               Show mismatches higher than this ratio (default=0.8). Only effective with the -r option [optional]
+                         -s, --ignore_softclipped
+                                               Ignore softclipped reads (default=False). [optional]
+                         --min_readlen MIN_READLEN
+                                               Minumum length of read (default=0). [optional]
+                         --skip_level SKIP_LEVEL
+                                               Plot depths at every n (1-50) bases. (default=10). Setting this a larger value makes file size smaller with reduced resolution [optional]
+                         --dump_consensus      Output consensus to STDOUT. Experimental.
+                         --min_concensus_depth MIN_CONCENSUS_DEPTH
+                                               Min depth to show consensus (default=10).
+                         --only_primer_mismatch
+                                               Show only primer mismatch
 
   ```
 
@@ -76,6 +96,8 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 
 
 ### tools/trim_primers/trim_primer_parts.py
+
+ Note (Dec 2021): Newer version of samtools has [*ampliconclip* tool](https://www.htslib.org/doc/samtools-ampliconclip.html) which can soft/hard clips ends corresponding to primer intervals from alignment of paried-end reads. 
 
   Trim primer parts of paired-end reads obtained from illumina machines.
 
