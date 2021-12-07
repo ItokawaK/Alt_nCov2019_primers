@@ -27,12 +27,12 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
     1. nCoV-2019_92_LEFT_b11529a (C27807T)
 
  to address dropout in the B.1.1.529 (Omicron) lineage. Also, nCoV-2019_72_RIGHT_C22A was omitted since the R.1 lineage is considered to be extinct from Japan. (Dec 6 2021)
- 
+
  ![N3toN4](https://user-images.githubusercontent.com/38896687/144775717-f18bf6b0-df09-43e6-b9b3-16d76e6fa79e.PNG)
 
 
 ### Protocol for illumina platforms
-[nCoV-2019 sequencing protocol for illumina V.4](https://www.protocols.io/view/ncov-2019-sequencing-protocol-for-illumina-btjqnkmw)
+[nCoV-2019 sequencing protocol for illumina V.5](https://www.protocols.io/view/ncov-2019-sequencing-protocol-for-illumina-b2msqc6e)
 
 ## Tools
 -------
