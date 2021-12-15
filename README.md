@@ -47,41 +47,43 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
      - matplotlib
      - numpy
      - pandas
-     - pypdf2
 
   ```
-  usage: plot_depth.py [-h] [-i [BAMS [BAMS ...]]] [-o OUT] [-p PRIMER] [-l HIGHLIGHTS] [-r REF_FA] [-t THREADS] [-m MISMATCHES_THRESH] [-s]
-                       [--min_readlen MIN_READLEN] [--out_consensus]
+  usage: plot_depth.py [-h] [-i [BAMS [BAMS ...]]] [-o OUT] [-p PRIMER] [-l HIGHLIGHTS] [-r REF_FA] [-t THREADS]
+                       [-m MISMATCHES_THRESH] [-s] [--min_readlen MIN_READLEN] [--skip_level SKIP_LEVEL]
+                       [--dump_consensus] [--min_concensus_depth MIN_CONCENSUS_DEPTH] [--only_primer_mismatch]
 
-                       Output depth plot in PDF. Ver: 0.12
+  Output depth plot in PDF. Ver: 0.12
 
-                       optional arguments:
-                         -h, --help            show this help message and exit
-                         -i [BAMS [BAMS ...]], --bams [BAMS [BAMS ...]]
-                                               Paths for input BAMs
-                         -o OUT, --out OUT     Output PDF file name
-                         -p PRIMER, --primer PRIMER
-                                               Primer regions in BED format [optional]
-                         -l HIGHLIGHTS, --highlights HIGHLIGHTS
-                                               Add highlights on selected amplicons. Give amplicon numbers delimited by comma (e.g. 18,76,...) Can only be used with the -p --primer option. [optional]      
-                         -r REF_FA, --ref_fa REF_FA
-                                               Reference fasta file [optional]
-                         -t THREADS, --threads THREADS
-                                               Num tasks to process concurrently [optional]
-                         -m MISMATCHES_THRESH, --mismatches_thresh MISMATCHES_THRESH
-                                               Show mismatches higher than this ratio (default=0.8). Only effective with the -r option [optional]
-                         -s, --ignore_softclipped
-                                               Ignore softclipped reads (default=False). [optional]
-                         --min_readlen MIN_READLEN
-                                               Minumum length of read (default=0). [optional]
-                         --skip_level SKIP_LEVEL
-                                               Plot depths at every n (1-50) bases. (default=10). Setting this a larger value makes file size smaller with reduced resolution [optional]
-                         --dump_consensus      Output consensus to STDOUT. Experimental.
-                         --min_concensus_depth MIN_CONCENSUS_DEPTH
-                                               Min depth to show consensus (default=10).
-                         --only_primer_mismatch
-                                               Show only primer mismatch
-
+  optional arguments:
+    -h, --help            show this help message and exit
+    -i [BAMS [BAMS ...]], --bams [BAMS [BAMS ...]]
+                          Paths for input BAMs
+    -o OUT, --out OUT     Output PDF file name
+    -p PRIMER, --primer PRIMER
+                          Primer regions in BED format [optional]
+    -l HIGHLIGHTS, --highlights HIGHLIGHTS
+                          Add highlights on selected amplicons. Give amplicon numbers delimited by comma (e.g. 18,76,...)  
+                          Can only be used with the -p --primer option. [optional]
+    -r REF_FA, --ref_fa REF_FA
+                          Reference fasta file [optional]
+    -t THREADS, --threads THREADS
+                          Num tasks to process concurrently [optional]
+    -m MISMATCHES_THRESH, --mismatches_thresh MISMATCHES_THRESH
+                          Show mismatches higher than this ratio (default=0.8). Only effective with the -r option
+                          [optional]
+    -s, --ignore_softclipped
+                          Ignore softclipped reads (default=False). [optional]
+    --min_readlen MIN_READLEN
+                          Minumum length of read (default=0). [optional]
+    --skip_level SKIP_LEVEL
+                          Plot depths at every n (1-50) bases. (default=10). Setting this a larger value makes file size   
+                          smaller with reduced resolution [optional]
+    --dump_consensus      Output consensus to STDOUT. Experimental.
+    --min_concensus_depth MIN_CONCENSUS_DEPTH
+                          Min depth to show consensus (default=10).
+    --only_primer_mismatch
+                          Show only primer mismatch
   ```
 
   If -r option is set, mismatches found on >80% reads (parsed from *mpileup*'s output) will be highlighted. This, however, takes additional time. Yellow and red lines indicate mismatches out of and inside of a primer target region, respecitively.
