@@ -756,8 +756,8 @@ def main(bam_files,
                     color_scheme['plot_fc'],
                     zorder=52)
 
-            # Horizontal line at 10
-            ax.axhline(10,
+            # Horizontal line at min_concensus_depth
+            ax.axhline(min_concensus_depth,
                    color='k',
                    linestyle=':',
                    linewidth=0.8,
@@ -800,7 +800,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.12
+    _version = 0.13
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
