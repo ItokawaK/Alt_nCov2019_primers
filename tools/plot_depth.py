@@ -243,7 +243,7 @@ class Mismatch:
         return None
 
 # samtools mpileup runner
-def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
+def samtools_mpileup(bam_file, ref_fa, bed=None, clipping=False, threashold=0.8, ):
 
     def readbase_parser(mpileup_line):
         read_base_str = mpileup_line[4]
@@ -310,9 +310,22 @@ def samtools_mpileup(bam_file, ref_fa, threashold=0.8):
 
         return (out_mismatch, out_indel)
 
+    if clipping:
+        p1 = subprocess.Popen(['samtools','mpileup', '-B', '-f', ref_fa, '-ax', '-'],
+                           stdin = subprocess.PIPE,
+                           stdout = subprocess.PIPE)
+        p0 = subprocess.Popen(['samtools', 'sort', '-'],
+                           stdin=subprocess.PIPE,
+                           stdout=p1.stdin)
+        subprocess.Popen(['samtools', 'ampliconclip', '--both-ends', '-b', bed, bam_file],
+                           stdout=p0.stdin,
+                           stderr=subprocess.PIPE)
+        p0.stdin.close()
 
-    p1 = subprocess.Popen(['samtools','mpileup', '-B', '-f', ref_fa, '-ax', bam_file],
-                       stdout = subprocess.PIPE)
+    else:
+        p1 = subprocess.Popen(['samtools','mpileup', '-B', '-f', ref_fa, '-ax', bam_file],
+                           stdout = subprocess.PIPE)
+
     out = p1.communicate()[0]
     out = [l.split('\t') for l in out.decode().rstrip().split('\n')]
 
@@ -684,18 +697,19 @@ def main(bam_files,
          num_cpu=1,
          plot_reduction_level=10,
          mismatches_thresh=0.8,
-         min_concensus_depth=10,
+         min_consensus_depth=10,
          remove_softclipped=False,
          min_readlen=0,
          out_consensus=False,
-         only_primer_mismatch=False):
+         only_primer_mismatch=False,
+         clipping=False):
 
     if fa_file == None:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
             executed1 = [executor.submit(samtools_depth, bam, remove_softclipped, min_readlen) for bam in bam_files]
     else:
         with ProcessPoolExecutor(max_workers = num_cpu) as executor:
-            executed1 = [executor.submit(samtools_mpileup, bam, fa_file, threashold=mismatches_thresh) for bam in bam_files]
+            executed1 = [executor.submit(samtools_mpileup, bam, fa_file, bed=primer_bed, clipping=clipping, threashold=mismatches_thresh) for bam in bam_files]
 
     depth_tbls = [ex.result() for ex in executed1]
 
@@ -756,8 +770,8 @@ def main(bam_files,
                     color_scheme['plot_fc'],
                     zorder=52)
 
-            # Horizontal line at min_concensus_depth
-            ax.axhline(min_concensus_depth,
+            # Horizontal line at min_consensus_depth
+            ax.axhline(min_consensus_depth,
                    color='k',
                    linestyle=':',
                    linewidth=0.8,
@@ -780,7 +794,7 @@ def main(bam_files,
                     mutate_genome(seq_name=title,
                                   refseq=refseq_str,
                                   tbl=tbl,
-                                  min_depth=min_concensus_depth)
+                                  min_depth=min_consensus_depth)
 
                 add_mismatch(tbl,
                              ax,
@@ -800,7 +814,7 @@ if __name__=='__main__':
     import sys
     import os
 
-    _version = 0.13
+    _version = 0.14
 
     parser = argparse.ArgumentParser(description='Output depth plot in PDF. Ver: {}'.format(_version))
     parser.add_argument('-i',
@@ -839,10 +853,12 @@ if __name__=='__main__':
                              'with reduced resolution [optional]')
     parser.add_argument('--dump_consensus', action='store_true',
                         help='Output consensus to STDOUT. Experimental.')
-    parser.add_argument('--min_concensus_depth', default=10, type=int,
+    parser.add_argument('--min_consensus_depth', default=10, type=int,
                         help='Min depth to show consensus (default=10).')
     parser.add_argument('--only_primer_mismatch', action='store_true',
                         help='Show only primer mismatch')
+    parser.add_argument('--clipping', action='store_true',
+                        help='Soft clip primer part before plotting.')
 
     args = parser.parse_args()
 
@@ -877,6 +893,13 @@ if __name__=='__main__':
         if not args.ref_fa:
             sys.exit('--dump_consensus can be used only with the -r (--ref_fa) option')
 
+    if args.clipping:
+        _p = subprocess.run('samtools 2>&1|grep ampliconclip',
+                            shell=True,
+                            stdout=subprocess.PIPE)
+        if not _p.stdout:
+            sys.exit('You may need newer vresion of samtools (>=1.11) to use --clipping option.')
+
     main(args.bams,
          args.out,
          primer_bed=args.primer,
@@ -884,9 +907,10 @@ if __name__=='__main__':
          fa_file=args.ref_fa,
          num_cpu=args.threads,
          mismatches_thresh=args.mismatches_thresh,
-         min_concensus_depth=args.min_concensus_depth,
+         min_consensus_depth=args.min_consensus_depth,
          remove_softclipped=args.ignore_softclipped,
          min_readlen=args.min_readlen,
          plot_reduction_level=args.skip_level,
          out_consensus=args.dump_consensus,
-         only_primer_mismatch=args.only_primer_mismatch)
+         only_primer_mismatch=args.only_primer_mismatch,
+         clipping=args.clipping)
