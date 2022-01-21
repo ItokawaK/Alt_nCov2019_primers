@@ -35,7 +35,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
     1. "nCoV-2019_15_LEFT_b11529a
     1. "nCoV-2019_34_RIGHT_b11529a
 
-    to address dropouts of two amplicons in BA.2 lineage and one amplicon in [AY.29 lineage with C2509T](https://github.com/cov-lineages/pango-designation/issues/381). (Jan 21 2022)
+    to address dropouts of two amplicons in BA.2 lineage and one amplicon in [AY.29 lineage with S:Q414R](https://github.com/cov-lineages/pango-designation/issues/381). (Jan 21 2022)
 
 ### Protocol for illumina platforms
 [nCoV-2019 sequencing protocol for illumina V.5](https://www.protocols.io/view/ncov-2019-sequencing-protocol-for-illumina-b2msqc6e)
