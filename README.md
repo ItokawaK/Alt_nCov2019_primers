@@ -30,7 +30,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 
  ![N3toN4](https://user-images.githubusercontent.com/38896687/144775717-f18bf6b0-df09-43e6-b9b3-16d76e6fa79e.PNG)
 
-- [Primers/ver_N5/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N5): Added five new primers
+- [Primers/ver_N5/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N5): Added three new primers
     1. "nCoV-2019_9_LEFT_b16172a
     1. "nCoV-2019_15_LEFT_b11529a
     1. "nCoV-2019_34_RIGHT_b11529a
