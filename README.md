@@ -1,7 +1,7 @@
 # Alternative primers for the ARTIC Network's nCov2019 multiplex PCR
 
 
-Here we provide some resources regarding the alternative primer sets for the [ARTIC Network's mupltiplex PCR for SARS-CoV-2 genome sequencing](https://github.com/artic-network/artic-ncov2019). Those primer sets are results of iterative modification from the [ARTIC Network V1](https://github.com/artic-network/artic-ncov2019).
+Here we provide some resources regarding the alternative primer sets for the [ARTIC Network's multiplex PCR for SARS-CoV-2 genome sequencing](https://github.com/artic-network/artic-ncov2019). Those primer sets are results of iterative modification from the [ARTIC Network V1](https://github.com/artic-network/artic-ncov2019).
 
 See below article for detail of the modifications (for version N1):
 
