@@ -3,7 +3,7 @@
 # Alternative primers for the ARTIC Network's nCov2019 multiplex PCR
 
 
-Here we provide some resources regarding the alternative primer sets for the [ARTIC Network's mupltiplex PCR for SARS-CoV-2 genome sequencing](https://github.com/artic-network/artic-ncov2019). Those primer sets are results of iterative modification from the [ARTIC Network V1](https://github.com/artic-network/artic-ncov2019).
+Here we provide some resources regarding the alternative primer sets for the [ARTIC Network's multiplex PCR for SARS-CoV-2 genome sequencing](https://github.com/artic-network/artic-ncov2019). Those primer sets are results of iterative modification from the [ARTIC Network V1](https://github.com/artic-network/artic-ncov2019).
 
 See below article for detail of the modifications (for version N1):
 
@@ -32,7 +32,7 @@ Itokawa K, Sekizuka T, Hashino M, Tanaka R, Kuroda M (2020) Disentangling primer
 
  ![N3toN4](https://user-images.githubusercontent.com/38896687/144775717-f18bf6b0-df09-43e6-b9b3-16d76e6fa79e.PNG)
 
-- [Primers/ver_N5/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N5): Added five new primers
+- [Primers/ver_N5/](https://github.com/ItokawaK/Alt_nCov2019_primers/tree/master/Primers/ver_N5): Added three new primers
     1. "nCoV-2019_9_LEFT_b16172a
     1. "nCoV-2019_15_LEFT_b11529a
     1. "nCoV-2019_34_RIGHT_b11529a
